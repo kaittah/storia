@@ -1,5 +1,5 @@
-export const LANGGRAPH_API_URL = 
-  process.env.LANGGRAPH_API_URL ?? "https://storia-cdd2862137c25b7dbbd31df228a10388.us.langgraph.app";
+export const LANGGRAPH_API_URL =
+  process.env.LANGGRAPH_API_URL ?? "http://localhost:54367";
 // v2 is tied to the 'open-canvas-prod' deployment.
 export const ASSISTANT_ID_COOKIE = "oc_assistant_id_v2";
 // export const ASSISTANT_ID_COOKIE = "oc_assistant_id";
