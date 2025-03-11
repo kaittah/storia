@@ -97,7 +97,7 @@ export const Thread: FC<ThreadProps> = (props: ThreadProps) => {
           <ThreadHistory
             switchSelectedThreadCallback={switchSelectedThreadCallback}
           />
-          <TighterText className="text-xl">Open Canvas</TighterText>
+          <TighterText className="text-xl">Story Weaver</TighterText>
           {!hasChatStarted && (
             <ModelSelector
               modelName={modelName}
