@@ -75,7 +75,7 @@ export function Login() {
             alt="LangChain Logo"
             className="rounded-full"
           />
-          Open Canvas
+          Story Weaver
         </div>
       </div>
       <div className="lg:p-8">

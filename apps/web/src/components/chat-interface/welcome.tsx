@@ -3,7 +3,7 @@ import { ThreadPrimitive, useThreadRuntime } from "@assistant-ui/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FC, useMemo } from "react";
 import { TighterText } from "../ui/header";
-import { NotebookPen } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { ProgrammingLanguagesDropdown } from "../ui/programming-lang-dropdown";
 import { Button } from "../ui/button";
 
@@ -94,7 +94,7 @@ const QuickStartPrompts = ({ searchEnabled }: QuickStartPromptsProps) => {
 
 const QuickStartButtons = (props: QuickStartButtonsProps) => {
   const handleLanguageSubmit = (language: ProgrammingLanguageOptions) => {
-    props.handleQuickStart("code", language);
+    props.handleQuickStart("text", language);
   };
 
   return (
@@ -102,22 +102,23 @@ const QuickStartButtons = (props: QuickStartButtonsProps) => {
       <div className="flex flex-col gap-6">
         <p className="text-gray-600 text-sm">Start with a blank canvas</p>
         <div className="flex flex-row gap-1 items-center justify-center w-full">
+          <ProgrammingLanguagesDropdown handleSubmit={handleLanguageSubmit} />
           <Button
             variant="outline"
             className="text-gray-500 hover:text-gray-700 transition-colors ease-in rounded-2xl flex items-center justify-center gap-2 w-[250px] h-[64px]"
             onClick={() => props.handleQuickStart("text")}
           >
-            New Markdown
-            <NotebookPen />
+            New Story
+            <BookOpen />
           </Button>
-          <ProgrammingLanguagesDropdown handleSubmit={handleLanguageSubmit} />
+          
         </div>
       </div>
-      <div className="flex flex-col gap-6 mt-2 w-full">
+      {/* <div className="flex flex-col gap-6 mt-2 w-full">
         <p className="text-gray-600 text-sm">or with a message</p>
         {props.composer}
         <QuickStartPrompts searchEnabled={props.searchEnabled} />
-      </div>
+      </div> */}
     </div>
   );
 };
