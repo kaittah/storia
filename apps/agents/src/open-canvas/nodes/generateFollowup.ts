@@ -4,7 +4,6 @@ import {
   getArtifactContent,
   isArtifactMarkdownContent,
 } from "@storia/shared/utils/artifacts";
-import { ensureStoreInConfig} from "../../utils.js";
 import { FOLLOWUP_ARTIFACT_PROMPT } from "../prompts.js";
 import {
   OpenCanvasGraphAnnotation,
@@ -24,7 +23,6 @@ export const generateFollowup = async (
     isToolCalling: true,
   });
 
-  const store = ensureStoreInConfig(config);
   const assistantId = config.configurable?.assistant_id;
   if (!assistantId) {
     throw new Error("`assistant_id` not found in configurable");

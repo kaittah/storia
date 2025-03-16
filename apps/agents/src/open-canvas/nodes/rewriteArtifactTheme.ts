@@ -10,7 +10,6 @@ import {
 } from "@storia/shared/utils/artifacts";
 import { ArtifactV3} from "@storia/shared/types";
 import {
-  ensureStoreInConfig,
   getModelConfig,
   getModelFromConfig,
 } from "../../utils.js";
@@ -34,7 +33,6 @@ export const rewriteArtifactTheme = async (
   const { modelName } = getModelConfig(config);
   const smallModel = await getModelFromConfig(config);
 
-  const store = ensureStoreInConfig(config);
   const assistantId = config.configurable?.assistant_id;
   if (!assistantId) {
     throw new Error("`assistant_id` not found in configurable");
