@@ -34,6 +34,7 @@
         "@langchain/core": "^0.3.38"
     },
     "dependencies": {
-        "canvas-confetti": "^1.9.3"
+        "canvas-confetti": "^1.9.3",
+        "googleapis": "^146.0.0"
     }
 }
