@@ -36,7 +36,7 @@ export function CanvasComponent() {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [webSearchResultsOpen, setWebSearchResultsOpen] = useState(false);
-  const [chatCollapsed, setChatCollapsed] = useState(false);
+  const [chatCollapsed, setChatCollapsed] = useState(true);
   const [googleDocsUrl, setGoogleDocsUrl] = useState("https://docs.google.com/document/d/1gA3JAGFbKPtZ418m1qQKxaTjhZAg00HYn1tGV2aauys/edit?tab=t.0");
   const [isLoadingDoc, setIsLoadingDoc] = useState(false);
 
@@ -181,7 +181,7 @@ export function CanvasComponent() {
     <ResizablePanelGroup direction="horizontal" className="h-screen">
       {!chatStarted && (
         <NoSSRWrapper>
-          <ContentComposerChatInterface
+          {/* <ContentComposerChatInterface
             chatCollapsed={chatCollapsed}
             setChatCollapsed={(c) => {
               setChatCollapsed(c);
@@ -218,7 +218,7 @@ export function CanvasComponent() {
             setChatStarted={setChatStarted}
             hasChatStarted={chatStarted}
             handleQuickStart={handleQuickStart}
-          />
+          /> */}
           
           {/* Show the Google Docs import form only when not editing */}
           {!isEditing && (
@@ -260,7 +260,7 @@ export function CanvasComponent() {
           )}
         </NoSSRWrapper>
       )}
-      {!chatCollapsed && chatStarted && (
+      {/* {!chatCollapsed && chatStarted && (
         <ResizablePanel
           defaultSize={25}
           minSize={15}
@@ -312,7 +312,7 @@ export function CanvasComponent() {
             />
           </NoSSRWrapper>
         </ResizablePanel>
-      )}
+      )} */}
 
       {chatStarted && (
         <>
