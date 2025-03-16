@@ -8,10 +8,9 @@ import {
   isArtifactMarkdownContent,
   getArtifactContent,
 } from "@storia/shared/utils/artifacts";
-import { ArtifactV3, Reflections } from "@storia/shared/types";
+import { ArtifactV3} from "@storia/shared/types";
 import {
   ensureStoreInConfig,
-  formatReflections,
   getModelConfig,
   getModelFromConfig,
 } from "../../utils.js";
@@ -40,12 +39,6 @@ export const rewriteArtifactTheme = async (
   if (!assistantId) {
     throw new Error("`assistant_id` not found in configurable");
   }
-  const memoryNamespace = ["memories", assistantId];
-  const memoryKey = "reflection";
-  const memories = await store.get(memoryNamespace, memoryKey);
-  const memoriesAsString = memories?.value
-    ? formatReflections(memories.value as Reflections)
-    : "No reflections found.";
 
   const currentArtifactContent = state.artifact
     ? getArtifactContent(state.artifact)
@@ -116,8 +109,6 @@ export const rewriteArtifactTheme = async (
   } else {
     throw new Error("No theme selected");
   }
-
-  formattedPrompt = formattedPrompt.replace("{reflections}", memoriesAsString);
 
   const newArtifactValues = await smallModel.invoke([
     { role: "user", content: formattedPrompt },

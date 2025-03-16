@@ -51,14 +51,12 @@ const buildMetaPrompt = (
 
 interface BuildPromptArgs {
   artifactContent: string;
-  memoriesAsString: string;
   isNewType: boolean;
   artifactMetaToolCall: z.infer<typeof OPTIONALLY_UPDATE_ARTIFACT_META_SCHEMA>;
 }
 
 export const buildPrompt = ({
   artifactContent,
-  memoriesAsString,
   isNewType,
   artifactMetaToolCall,
 }: BuildPromptArgs) => {
@@ -68,7 +66,6 @@ export const buildPrompt = ({
     "{artifactContent}",
     artifactContent
   )
-    .replace("{reflections}", memoriesAsString)
     .replace("{updateMetaPrompt}", metaPrompt);
 };
 

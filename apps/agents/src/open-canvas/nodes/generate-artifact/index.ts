@@ -1,6 +1,5 @@
 import {
   createContextDocumentMessages,
-  getFormattedReflections,
   getModelConfig,
   getModelFromConfig,
   isUsingO1MiniModel,
@@ -44,9 +43,7 @@ export const generateArtifact = async (
     }
   );
 
-  const memoriesAsString = await getFormattedReflections(config);
   const formattedNewArtifactPrompt = formatNewArtifactPrompt(
-    memoriesAsString,
     modelName
   );
 
