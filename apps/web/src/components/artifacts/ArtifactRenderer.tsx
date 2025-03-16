@@ -311,7 +311,7 @@ function ArtifactRendererComponent(props: ArtifactRendererProps) {
 
   if (isV4Artifact) {
     console.log("Rendering V4 artifact");
-    return <ArtifactV4Renderer artifact={artifact as ArtifactV4} />;
+    return <ArtifactV4Renderer artifact={artifact as unknown as ArtifactV4} />;
   }
 
   const isBackwardsDisabled =

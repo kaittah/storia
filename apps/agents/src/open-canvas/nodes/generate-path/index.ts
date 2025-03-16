@@ -77,6 +77,7 @@ export async function generatePath(
   ) {
     return {
       next: "rewriteArtifactTheme",
+      isWorkflowOperation: true,
       ...(newMessages.length
         ? { messages: newMessages, _messages: newMessages }
         : {}),

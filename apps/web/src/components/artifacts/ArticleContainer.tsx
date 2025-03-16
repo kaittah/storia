@@ -4,9 +4,10 @@ import { TextRenderer } from './TextRenderer';
 
 interface ArticleContainerProps {
   article: ArticleContent;
+  isRawView?: boolean;
 }
 
-export const ArticleContainer: React.FC<ArticleContainerProps> = ({ article }) => {
+export const ArticleContainer: React.FC<ArticleContainerProps> = ({ article, isRawView = false }) => {
   const [isEditing, setIsEditing] = useState(false);
   
   // Add debugging
@@ -21,7 +22,11 @@ export const ArticleContainer: React.FC<ArticleContainerProps> = ({ article }) =
         <p className="text-sm text-gray-600 mt-1">By {article.author || 'Unknown Author'}</p>
       </div>
       <div className="prose max-w-none">
-        {article.fullMarkdown ? (
+        {isRawView ? (
+          <pre className="whitespace-pre-wrap font-mono text-sm p-4 bg-gray-50 rounded border border-gray-200 overflow-auto">
+            {article.fullMarkdown}
+          </pre>
+        ) : article.fullMarkdown ? (
           <TextRenderer 
             content={article.fullMarkdown}
             isEditing={isEditing}

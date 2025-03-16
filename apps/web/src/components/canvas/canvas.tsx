@@ -140,7 +140,7 @@ export function CanvasComponent() {
       // Wait for state updates to complete
       setTimeout(() => {
         console.log("Setting new artifact");
-        setArtifact(newArtifact);
+        setArtifact(newArtifact as unknown as ArtifactV3);
         
         setTimeout(() => {
           setChatStarted(true);

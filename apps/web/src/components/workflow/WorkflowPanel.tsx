@@ -14,27 +14,38 @@ const WORKFLOW_STEPS = [
 export function WorkflowPanel() {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { graphData } = useGraphContext();
 
-  const handleStepComplete = () => {
+  const handleStepComplete = async () => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    
     // Set the appropriate state flags based on the current step
     const stepName = WORKFLOW_STEPS[currentStep];
     
     if (graphData && typeof graphData.streamMessage === 'function') {
-      if (stepName === "Translate") {
-        graphData.streamMessage({ language: true, copyedit: false, format: false });
-      } else if (stepName === "Grammar Edit") {
-        graphData.streamMessage({ copyedit: true, language: false, format: false });
-      } else if (stepName === "Formatting") {
-        graphData.streamMessage({ format: true, copyedit: false, language: false });
+      try {
+        if (stepName === "Translate") {
+          await graphData.streamMessage({ language: true, copyedit: false, format: false });
+        } else if (stepName === "Grammar Edit") {
+          await graphData.streamMessage({ copyedit: true, language: false, format: false });
+        } else if (stepName === "Formatting") {
+          await graphData.streamMessage({ format: true, copyedit: false, language: false });
+        }
+        
+        // Mark the step as completed and move to the next step
+        setCompletedSteps([...completedSteps, currentStep]);
+        setCurrentStep(currentStep + 1);
+      } catch (error) {
+        console.error(`Error processing ${stepName}:`, error);
+      } finally {
+        setIsProcessing(false);
       }
     } else {
       console.error("streamMessage is not available in GraphContext:", graphData);
+      setIsProcessing(false);
     }
-
-    // Mark the step as completed and move to the next step
-    setCompletedSteps([...completedSteps, currentStep]);
-    setCurrentStep(currentStep + 1);
   };
 
   const triggerConfetti = () => {
@@ -99,10 +110,19 @@ export function WorkflowPanel() {
           >
             <span>{step}</span>
             {currentStep === index && (
-              <PlayCircle 
-                className="w-5 h-5 text-blue-500 cursor-pointer ml-2 hover:text-blue-600"
+              <Button
+                size="sm"
+                variant="ghost"
+                className="p-0 h-6 w-6"
                 onClick={handleStepComplete}
-              />
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full" />
+                ) : (
+                  <PlayCircle className="w-5 h-5 text-blue-500 cursor-pointer hover:text-blue-600" />
+                )}
+              </Button>
             )}
           </li>
         ))}
