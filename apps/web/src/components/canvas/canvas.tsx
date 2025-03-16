@@ -1,12 +1,6 @@
 "use client";
 
 import { ArtifactRenderer } from "@/components/artifacts/ArtifactRenderer";
-import { WebSearchResults } from "@/components/web-search-results";
-import {
-  ALL_MODEL_NAMES,
-  DEFAULT_MODEL_CONFIG,
-  DEFAULT_MODEL_NAME,
-} from "@storia/shared/models";
 import { useGraphContext } from "@/contexts/GraphContext";
 import { useToast } from "@/hooks/use-toast";
 import { getLanguageTemplate } from "@/lib/get_language_template";
@@ -14,90 +8,21 @@ import {
   ArtifactCodeV3,
   ArtifactMarkdownV3,
   ArtifactV3,
-  CustomModelConfig,
-  ProgrammingLanguageOptions,
+  ArtifactV4,
+  ArticleContent,
+  ArtifactMarkdownV4,
 } from "@storia/shared/types";
 import React, { useEffect, useState } from "react";
-import { ContentComposerChatInterface } from "./content-composer";
-import NoSSRWrapper from "../NoSSRWrapper";
-import { useThreadContext } from "@/contexts/ThreadProvider";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
-import { CHAT_COLLAPSED_QUERY_PARAM } from "@/constants";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Thread } from "@langchain/langgraph-sdk";
 
 export function CanvasComponent() {
   const { graphData } = useGraphContext();
-  const { setModelName, setModelConfig } = useThreadContext();
   const { setArtifact, chatStarted, setChatStarted } = graphData;
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
-  const [webSearchResultsOpen, setWebSearchResultsOpen] = useState(false);
   const [chatCollapsed, setChatCollapsed] = useState(true);
   const [googleDocsUrl, setGoogleDocsUrl] = useState("https://docs.google.com/document/d/1gA3JAGFbKPtZ418m1qQKxaTjhZAg00HYn1tGV2aauys/edit?tab=t.0");
   const [isLoadingDoc, setIsLoadingDoc] = useState(false);
-
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const chatCollapsedSearchParam = searchParams.get(CHAT_COLLAPSED_QUERY_PARAM);
-  useEffect(() => {
-    try {
-      if (chatCollapsedSearchParam) {
-        setChatCollapsed(JSON.parse(chatCollapsedSearchParam));
-      }
-    } catch (e) {
-      setChatCollapsed(false);
-      const queryParams = new URLSearchParams(searchParams.toString());
-      queryParams.delete(CHAT_COLLAPSED_QUERY_PARAM);
-      router.replace(`?${queryParams.toString()}`, { scroll: false });
-    }
-  }, [chatCollapsedSearchParam]);
-
-  const handleQuickStart = (
-    type: "text" | "code",
-    language?: ProgrammingLanguageOptions
-  ) => {
-    if (type === "code" && !language) {
-      toast({
-        title: "Language not selected",
-        description: "Please select a language to continue",
-        duration: 5000,
-      });
-      return;
-    }
-    setChatStarted(true);
-
-    let artifactContent: ArtifactCodeV3 | ArtifactMarkdownV3;
-    if (type === "code" && language) {
-      artifactContent = {
-        index: 1,
-        type: "code",
-        title: `Quick start ${type}`,
-        code: getLanguageTemplate(language),
-        language,
-      };
-    } else {
-      artifactContent = {
-        index: 1,
-        type: "text",
-        title: `Quick start ${type}`,
-        fullMarkdown: "",
-      };
-    }
-
-    const newArtifact: ArtifactV3 = {
-      currentIndex: 1,
-      contents: [artifactContent],
-    };
-    // Do not worry about existing items in state. This should
-    // never occur since this action can only be invoked if
-    // there are no messages/artifacts in the thread.
-    setArtifact(newArtifact);
-    setIsEditing(true);
-  };
 
   const handleGoogleDocsImport = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,40 +49,105 @@ export function CanvasComponent() {
       const data = await response.json();
       console.log("Received document data:", data);
       
-      // Create a very simple text artifact - no extra formatting
-      const artifactContent: ArtifactMarkdownV3 = {
-        index: 1,
-        type: "text",
+      // First, let's parse the entire document to identify stories and their authors
+      const stories: Array<{title: string, author: string, content: string}> = [];
+      let currentTitle = '';
+      let currentAuthor = '';
+      let currentContent: string[] = [];
+
+      // Split by lines to process line by line
+      const lines = data.content.split('\n');
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        if (line.startsWith('# ')) {
+          // This is a new story title
+          
+          // If we were already processing a story, save it
+          if (currentTitle) {
+            stories.push({
+              title: currentTitle,
+              author: currentAuthor || 'Unknown Author',
+              content: currentContent.join('\n').trim()
+            });
+            
+            // Reset for the new story
+            currentContent = [];
+          }
+          
+          // Set the new title
+          currentTitle = line.replace(/^# /, '').trim();
+          currentAuthor = ''; // Reset author for the new story
+          console.log(`Found story title: "${currentTitle}"`);
+          
+        } else if (line.startsWith('## ') && currentTitle) {
+          // This is an author for the current story
+          currentAuthor = line.replace(/^## /, '').trim();
+          console.log(`Found author for "${currentTitle}": "${currentAuthor}"`);
+          
+        } else if (currentTitle) {
+          // This is content for the current story
+          currentContent.push(line);
+        }
+      }
+
+      // Don't forget to add the last story if there is one
+      if (currentTitle) {
+        stories.push({
+          title: currentTitle,
+          author: currentAuthor || 'Unknown Author',
+          content: currentContent.join('\n').trim()
+        });
+      }
+
+      // Now convert the stories to ArticleContent objects
+      const articles: ArticleContent[] = stories.map((story, index) => ({
+        index: index + 1,
+        type: "text" as const,
+        title: story.title,
+        author: story.author,
+        fullMarkdown: story.content
+      }));
+
+      console.log(`Processed ${articles.length} stories from the document`);
+      articles.forEach((article, idx) => {
+        console.log(`Story ${idx+1}: "${article.title}" by ${article.author} (${article.fullMarkdown.length} chars)`);
+      });
+
+      // Create the nested structure
+      const artifactContent: ArtifactMarkdownV4 = {
         title: data.title || "Google Doc Import",
-        fullMarkdown: data.content || "",
+        articles
       };
       
-      const newArtifact: ArtifactV3 = {
+      const newArtifact: ArtifactV4 = {
         currentIndex: 1,
         contents: [artifactContent],
       };
+
+      console.log("Created new artifact:", newArtifact);
       
-      // Use the graphData from the component scope, not from a hook inside this function
       const { setArtifact, setChatStarted, setUpdateRenderedArtifactRequired } = graphData;
       
       setChatStarted(false);
       setArtifact(undefined); // Clear existing artifact
-      setIsEditing(false);
       
       // Wait for state updates to complete
       setTimeout(() => {
+        console.log("Setting new artifact");
         setArtifact(newArtifact);
         
         setTimeout(() => {
           setChatStarted(true);
-          setUpdateRenderedArtifactRequired(true); // This is important to trigger the BlockNote editor
+          setUpdateRenderedArtifactRequired(true);
           
           setTimeout(() => {
             setIsEditing(true);
             
             toast({
               title: "Document Imported",
-              description: `Successfully imported "${data.title}"`,
+              description: `Successfully imported "${data.title}" with ${articles.length} articles`,
               duration: 3000,
             });
           }, 100);
@@ -177,182 +167,54 @@ export function CanvasComponent() {
     }
   };
 
+  const switchSelectedThread = (thread: Thread) => {  
+    graphData.switchSelectedThread(thread);
+  };
+
   return (
-    <ResizablePanelGroup direction="horizontal" className="h-screen">
-      {!chatStarted && (
-        <NoSSRWrapper>
-          {/* <ContentComposerChatInterface
-            chatCollapsed={chatCollapsed}
-            setChatCollapsed={(c) => {
-              setChatCollapsed(c);
-              const queryParams = new URLSearchParams(searchParams.toString());
-              queryParams.set(CHAT_COLLAPSED_QUERY_PARAM, JSON.stringify(c));
-              router.replace(`?${queryParams.toString()}`, { scroll: false });
-            }}
-            switchSelectedThreadCallback={(thread) => {
-              // Chat should only be "started" if there are messages present
-              if ((thread.values as Record<string, any>)?.messages?.length) {
-                setChatStarted(true);
-                if (thread?.metadata?.customModelName) {
-                  setModelName(
-                    thread.metadata.customModelName as ALL_MODEL_NAMES
-                  );
-                } else {
-                  setModelName(DEFAULT_MODEL_NAME);
-                }
-
-                if (thread?.metadata?.modelConfig) {
-                  setModelConfig(
-                    (thread?.metadata?.customModelName ??
-                      DEFAULT_MODEL_NAME) as ALL_MODEL_NAMES,
-                    (thread.metadata?.modelConfig ??
-                      DEFAULT_MODEL_CONFIG) as CustomModelConfig
-                  );
-                } else {
-                  setModelConfig(DEFAULT_MODEL_NAME, DEFAULT_MODEL_CONFIG);
-                }
-              } else {
-                setChatStarted(false);
-              }
-            }}
-            setChatStarted={setChatStarted}
-            hasChatStarted={chatStarted}
-            handleQuickStart={handleQuickStart}
-          /> */}
-          
-          {/* Show the Google Docs import form only when not editing */}
-          {!isEditing && (
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 w-96 bg-white rounded-lg shadow-lg p-6">
-              <h2 className="text-xl font-bold mb-4 text-center">Import Document</h2>
-              <form onSubmit={handleGoogleDocsImport} className="space-y-4">
-                <div>
-                  <label htmlFor="docsUrl" className="block text-sm font-medium mb-1">
-                    Google Docs URL
-                  </label>
-                  <input
-                    id="docsUrl"
-                    type="text"
-                    value={googleDocsUrl}
-                    onChange={(e) => setGoogleDocsUrl(e.target.value)}
-                    placeholder="Enter Google Docs URL"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={isLoadingDoc}
-                  className="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                >
-                  {isLoadingDoc ? (
-                    <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Importing...
-                    </span>
-                  ) : (
-                    "Import Document"
-                  )}
-                </button>
-              </form>
-            </div>
-          )}
-        </NoSSRWrapper>
-      )}
-      {/* {!chatCollapsed && chatStarted && (
-        <ResizablePanel
-          defaultSize={25}
-          minSize={15}
-          maxSize={50}
-          className="transition-all duration-700 h-screen mr-auto bg-gray-50/70 shadow-inner-right"
-          id="chat-panel-main"
-          order={1}
-        >
-          <NoSSRWrapper>
-            <ContentComposerChatInterface
-              chatCollapsed={chatCollapsed}
-              setChatCollapsed={(c) => {
-                setChatCollapsed(c);
-                const queryParams = new URLSearchParams(
-                  searchParams.toString()
-                );
-                queryParams.set(CHAT_COLLAPSED_QUERY_PARAM, JSON.stringify(c));
-                router.replace(`?${queryParams.toString()}`, { scroll: false });
-              }}
-              switchSelectedThreadCallback={(thread) => {
-                // Chat should only be "started" if there are messages present
-                if ((thread.values as Record<string, any>)?.messages?.length) {
-                  setChatStarted(true);
-                  if (thread?.metadata?.customModelName) {
-                    setModelName(
-                      thread.metadata.customModelName as ALL_MODEL_NAMES
-                    );
-                  } else {
-                    setModelName(DEFAULT_MODEL_NAME);
-                  }
-
-                  if (thread?.metadata?.modelConfig) {
-                    setModelConfig(
-                      (thread?.metadata.customModelName ??
-                        DEFAULT_MODEL_NAME) as ALL_MODEL_NAMES,
-                      (thread.metadata.modelConfig ??
-                        DEFAULT_MODEL_CONFIG) as CustomModelConfig
-                    );
-                  } else {
-                    setModelConfig(DEFAULT_MODEL_NAME, DEFAULT_MODEL_CONFIG);
-                  }
-                } else {
-                  setChatStarted(false);
-                }
-              }}
-              setChatStarted={setChatStarted}
-              hasChatStarted={chatStarted}
-              handleQuickStart={handleQuickStart}
-            />
-          </NoSSRWrapper>
-        </ResizablePanel>
-      )} */}
-
-      {chatStarted && (
-        <>
-          <ResizableHandle />
-          <ResizablePanel
-            defaultSize={chatCollapsed ? 100 : 75}
-            maxSize={85}
-            minSize={50}
-            id="canvas-panel"
-            order={2}
-            className="flex flex-row w-full"
-          >
-            <div className="w-full ml-auto">
-              <ArtifactRenderer
-                chatCollapsed={chatCollapsed}
-                setChatCollapsed={(c) => {
-                  setChatCollapsed(c);
-                  const queryParams = new URLSearchParams(
-                    searchParams.toString()
-                  );
-                  queryParams.set(
-                    CHAT_COLLAPSED_QUERY_PARAM,
-                    JSON.stringify(c)
-                  );
-                  router.replace(`?${queryParams.toString()}`, {
-                    scroll: false,
-                  });
-                }}
-                setIsEditing={setIsEditing}
-                isEditing={isEditing}
+    <div className="h-screen flex flex-col">
+        <div className="w-full bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-4 flex-1 max-w-3xl mx-auto">
+            <h2 className="text-sm font-medium text-gray-700">Import Document</h2>
+            <form onSubmit={handleGoogleDocsImport} className="flex-1 flex items-center gap-3">
+              <input
+                id="docsUrl"
+                type="text"
+                value={googleDocsUrl}
+                onChange={(e) => setGoogleDocsUrl(e.target.value)}
+                placeholder="Enter Google Docs URL"
+                className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-            </div>
-            <WebSearchResults
-              open={webSearchResultsOpen}
-              setOpen={setWebSearchResultsOpen}
-            />
-          </ResizablePanel>
-        </>
-      )}
-    </ResizablePanelGroup>
+              <button
+                type="submit"
+                disabled={isLoadingDoc}
+                className="px-4 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 min-w-[120px]"
+              >
+                {isLoadingDoc ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Importing...
+                  </span>
+                ) : (
+                  "Import Document"
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+        
+        <div className="flex-1 overflow-auto">
+          <ArtifactRenderer 
+            isEditing={isEditing}
+            setIsEditing={setIsEditing}
+            chatCollapsed={chatCollapsed}
+            setChatCollapsed={setChatCollapsed}
+          />
+        </div>
+    </div>
   );
 }
 
