@@ -53,9 +53,11 @@ export async function POST(request: NextRequest) {
             paragraphType = 'heading';
             
             const headingText = element.paragraph.elements
-              .filter((el: any) => el.textRun && el.textRun.content)
-              .map((el: any) => el.textRun.content)
-              .join("");
+              ? element.paragraph.elements
+                .filter((el: any) => el.textRun && el.textRun.content)
+                .map((el: any) => el.textRun.content)
+                .join("")
+              : "";
               
             // Create properly formatted heading
             if (headingText.trim()) {
@@ -64,23 +66,25 @@ export async function POST(request: NextRequest) {
           } else {
             // Regular paragraph
             const paragraphText = element.paragraph.elements
-              .filter((el: any) => el.textRun && el.textRun.content)
-              .map((el: any) => {
-                // Extract formatting if available
-                const textRun = el.textRun;
-                const content = textRun.content;
-                let formattedText = content;
-                
-                // Apply basic text formatting
-                if (textRun.textStyle) {
-                  if (textRun.textStyle.bold) formattedText = `**${formattedText}**`;
-                  if (textRun.textStyle.italic) formattedText = `*${formattedText}*`;
-                  if (textRun.textStyle.underline) formattedText = `__${formattedText}__`;
-                }
-                
-                return formattedText;
-              })
-              .join("");
+              ? element.paragraph.elements
+                .filter((el: any) => el.textRun && el.textRun.content)
+                .map((el: any) => {
+                  // Extract formatting if available
+                  const textRun = el.textRun;
+                  const content = textRun.content;
+                  let formattedText = content;
+                  
+                  // Apply basic text formatting
+                  if (textRun.textStyle) {
+                    if (textRun.textStyle.bold) formattedText = `**${formattedText}**`;
+                    if (textRun.textStyle.italic) formattedText = `*${formattedText}*`;
+                    if (textRun.textStyle.underline) formattedText = `__${formattedText}__`;
+                  }
+                  
+                  return formattedText;
+                })
+                .join("")
+              : "";
               
             if (paragraphText.trim()) {
               formattedBlocks.push(paragraphText);
@@ -90,9 +94,10 @@ export async function POST(request: NextRequest) {
           // Handle tables by converting to markdown format
           formattedBlocks.push("<!-- Table detected - converting to markdown format -->");
           // Table processing code would go here
-        } else if (element.listItem) {
+        } else if ('listItem' in element) {
           // Handle list items
-          const listText = element.listItem.content
+          const listItemElement = element as any; // Type assertion for listItem
+          const listText = listItemElement.listItem.content
             .filter((content: any) => content.paragraph)
             .map((content: any) => {
               return content.paragraph.elements
@@ -103,7 +108,7 @@ export async function POST(request: NextRequest) {
             .join("");
             
           if (listText.trim()) {
-            const listType = element.listItem.listId ? "- " : "1. "; // Simple distinction between bullet and numbered
+            const listType = listItemElement.listItem.listId ? "- " : "1. "; // Simple distinction between bullet and numbered
             formattedBlocks.push(`${listType}${listText.trim()}`);
           }
         }
