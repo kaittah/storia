@@ -17,6 +17,7 @@ import { Thread } from "@langchain/langgraph-sdk";
 import { WandSparkles } from "lucide-react";
 import { TooltipIconButton } from "@/components/ui/assistant-ui/tooltip-icon-button";
 import { WorkflowPanel } from "@/components/workflow/WorkflowPanel";
+import { ApprovalDialog } from "@/components/ApprovalDialog";
 
 export function CanvasComponent() {
   const { graphData } = useGraphContext();
@@ -234,6 +235,17 @@ export function CanvasComponent() {
         >
           <WandSparkles className="w-[26px] h-[26px] hover:text-gray-900 transition-colors" />
         </TooltipIconButton>
+        
+        {/* Add approval dialog */}
+        {graphData.proposedChanges && (
+          <ApprovalDialog
+            isOpen={graphData.isApprovalDialogOpen}
+            onOpenChange={graphData.setIsApprovalDialogOpen}
+            proposedChanges={graphData.proposedChanges}
+            onApprove={graphData.approveChanges}
+            onReject={graphData.rejectChanges}
+          />
+        )}
     </div>
   );
 }

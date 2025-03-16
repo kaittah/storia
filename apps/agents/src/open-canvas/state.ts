@@ -6,11 +6,10 @@ import {
   ArtifactV3,
   TextHighlight,
   SearchResult,
+  ArtifactLengthOptions,
 } from "@storia/shared/types";
 import {
   Annotation,
-  MessagesAnnotation,
-  messagesStateReducer,
 } from "@langchain/langgraph";
 import { OC_SUMMARIZED_MESSAGE_KEY } from "@storia/shared/constants";
 
@@ -45,94 +44,147 @@ function isSummaryMessage(msg: unknown): boolean {
   return false;
 }
 
-export const OpenCanvasGraphAnnotation = Annotation.Root({
-  /**
-   * The full list of messages in the conversation.
-   */
-  ...MessagesAnnotation.spec,
-  /**
-   * The list of messages passed to the model. Can include summarized messages,
-   * and others which are NOT shown to the user.
-   */
-  _messages: Annotation<BaseMessage[], Messages>({
-    reducer: (state, update) => {
-      const latestMsg = Array.isArray(update)
-        ? update[update.length - 1]
-        : update;
+export interface OpenCanvasGraphProposedChanges {
+  currentText: string;
+  proposedText: string;
+  metadata?: Record<string, any>;
+}
 
-      if (isSummaryMessage(latestMsg)) {
-        // The state list has been updated by a summary message. Clear the existing state messages.
-        return messagesStateReducer([], update);
-      }
+export type OpenCanvasGraphReturnType = Partial<typeof OpenCanvasGraphAnnotation.State> & {
+  next?: string;
+  format?: boolean;
+  copyedit?: boolean;
+  language?: boolean;
+  artifactLength?: ArtifactLengthOptions;
+  readingLevel?: ReadingLevelOptions;
+  highlightedCode?: CodeHighlight;
+  highlightedText?: TextHighlight;
+  regenerateWithEmojis?: boolean;
+  addComments?: boolean;
+  addLogs?: boolean;
+  portLanguage?: ProgrammingLanguageOptions;
+  fixBugs?: boolean;
+  proposedChanges?: OpenCanvasGraphProposedChanges;
+  approvalResult?: boolean;
+};
 
-      return messagesStateReducer(state, update);
-    },
-    default: () => [],
-  }),
-  /**
-   * The part of the artifact the user highlighted. Use the `selectedArtifactId`
-   * to determine which artifact the highlight belongs to.
-   */
-  highlightedCode: Annotation<CodeHighlight | undefined>,
-  /**
-   * The highlighted text. This includes the markdown blocks which the highlighted
-   * text belongs to, along with the entire plain text content of highlight.
-   */
-  highlightedText: Annotation<TextHighlight | undefined>,
-  /**
-   * The artifacts that have been generated in the conversation.
-   */
-  artifact: Annotation<ArtifactV3>,
-  /**
-   * The next node to route to. Only used for the first routing node/conditional edge.
-   */
-  next: Annotation<string | undefined>,
-  /**
-   * The language to translate the artifact to.
-   */
-  language: Annotation<boolean | undefined>,
-  /**
-   * The length of the artifact to regenerate to.
-   */
-  format: Annotation<boolean | undefined>,
-  /**
-   * Whether or not to regenerate with emojis.
-   */
-  copyedit: Annotation<boolean | undefined>,
-  /**
-   * The reading level to adjust the artifact to.
-   */
-  readingLevel: Annotation<ReadingLevelOptions | undefined>,
-  /**
-   * Whether or not to add comments to the code artifact.
-   */
-  addComments: Annotation<boolean | undefined>,
-  /**
-   * Whether or not to add logs to the code artifact.
-   */
-  addLogs: Annotation<boolean | undefined>,
-  /**
-   * The programming language to port the code artifact to.
-   */
-  portLanguage: Annotation<ProgrammingLanguageOptions | undefined>,
-  /**
-   * Whether or not to fix bugs in the code artifact.
-   */
-  fixBugs: Annotation<boolean | undefined>,
-  /**
-   * The ID of the custom quick action to use.
-   */
-  customQuickActionId: Annotation<string | undefined>,
-  /**
-   * Whether or not to search the web for additional context.
-   */
-  webSearchEnabled: Annotation<boolean | undefined>,
-  /**
-   * The search results to include in context.
-   */
-  webSearchResults: Annotation<SearchResult[] | undefined>,
-});
+export const OpenCanvasGraphAnnotation = {
+  State: {
+    /**
+     * The full list of messages in the conversation.
+     */
+    _messages: Annotation<BaseMessage[]>({
+      reducer: (state, update) => {
+        const latestMsg = Array.isArray(update)
+          ? update[update.length - 1]
+          : update;
 
-export type OpenCanvasGraphReturnType = Partial<
-  typeof OpenCanvasGraphAnnotation.State
->;
+        if (isSummaryMessage(latestMsg)) {
+          // The state list has been updated by a summary message. Clear the existing state messages.
+          return [];
+        }
+
+        return [...state, ...(Array.isArray(update) ? update : [update])];
+      },
+      default: () => [],
+    }),
+    
+    /**
+     * Accessor for _messages
+     */
+    messages: Annotation<BaseMessage[]>({
+      reducer: (state, update) => [...state, ...(Array.isArray(update) ? update : [update])],
+      default: () => [],
+    }),
+    
+    /**
+     * Highlighted code for transforming.
+     */
+    highlightedCode: Annotation<CodeHighlight | undefined>(),
+    
+    /**
+     * Highlighted text for transforming.
+     */
+    highlightedText: Annotation<TextHighlight | undefined>(),
+    
+    /**
+     * Current artifact contents.
+     */
+    artifact: Annotation<ArtifactV3 | undefined>(),
+    
+    /**
+     * Whether to format the text.
+     */
+    format: Annotation<boolean | undefined>(),
+    
+    /**
+     * Whether to copyedit the text.
+     */
+    copyedit: Annotation<boolean | undefined>(),
+    
+    /**
+     * The next node to route to. Only used for the first routing node/conditional edge.
+     */
+    next: Annotation<string | undefined>(),
+    
+    /**
+     * The language to translate the artifact to.
+     */
+    language: Annotation<boolean | undefined>(),
+    
+    /**
+     * The reading level to adjust the artifact to.
+     */
+    readingLevel: Annotation<ReadingLevelOptions | undefined>(),
+    
+    /**
+     * Whether or not to add comments to the code artifact.
+     */
+    addComments: Annotation<boolean | undefined>(),
+    
+    /**
+     * Whether or not to add logs to the code artifact.
+     */
+    addLogs: Annotation<boolean | undefined>(),
+    
+    /**
+     * The programming language to port the code artifact to.
+     */
+    portLanguage: Annotation<ProgrammingLanguageOptions | undefined>(),
+    
+    /**
+     * Whether or not to fix bugs in the code artifact.
+     */
+    fixBugs: Annotation<boolean | undefined>(),
+    
+    /**
+     * The ID of the custom quick action to use.
+     */
+    customQuickActionId: Annotation<string | undefined>(),
+    
+    /**
+     * Whether or not to search the web for additional context.
+     */
+    webSearchEnabled: Annotation<boolean | undefined>(),
+    
+    /**
+     * The search results to include in context.
+     */
+    webSearchResults: Annotation<SearchResult[] | undefined>(),
+    
+    /**
+     * Proposed changes for human approval
+     */
+    proposedChanges: Annotation<OpenCanvasGraphProposedChanges | undefined>(),
+    
+    /**
+     * Result of human approval (true = approved, false = rejected)
+     */
+    approvalResult: Annotation<boolean | undefined>(),
+    
+    /**
+     * Flag for workflow operations
+     */
+    isWorkflowOperation: Annotation<boolean | undefined>(),
+  }
+};

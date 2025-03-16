@@ -1,70 +1,83 @@
-import { END, Send, START, StateGraph } from "@langchain/langgraph";
-import { generatePath } from "./nodes/generate-path/index.js";
+import { StateGraph} from "@langchain/langgraph";
 import { rewriteArtifactTheme } from "./nodes/rewriteArtifactTheme.js";
 import { updateHighlightedText } from "./nodes/updateHighlightedText.js";
-import { OpenCanvasGraphAnnotation } from "./state.js";
+import { humanApprover } from "./nodes/humanApprover.js";
+import { applyApprovedChanges } from "./nodes/applyApprovedChanges.js";
+import { rejectChanges } from "./nodes/rejectChanges.js";
+import { OpenCanvasGraphReturnType } from "./state.js";
 
+/**
+ * Define allowed node keys.
+ */
+type NodeKey =
+  | "__start__"
+  | "__end__"
+  | "dummyStartNode"
+  | "rewriteArtifactTheme"
+  | "updateHighlightedText"
+  | "humanApprover"
+  | "applyApprovedChanges"
+  | "rejectChanges";
 
-const routeNode = (state: typeof OpenCanvasGraphAnnotation.State) => {
-  if (!state.next) {
-    throw new Error("'next' state field not set.");
+async function dummyStartNode(state: OpenCanvasGraphReturnType): Promise<OpenCanvasGraphReturnType> {
+  return state;
+}
+
+function apply_or_reject_changes(state: OpenCanvasGraphReturnType): Exclude<NodeKey, "__start__" | "__end__"> {
+  const next = state.next;
+  if (!next || next === "applyApprovedChanges") return "applyApprovedChanges";
+  return "rejectChanges";
+}
+
+function routeAfterStart(state: OpenCanvasGraphReturnType): Exclude<NodeKey, "__start__" | "__end__"> {
+  const { highlightedText, language, format, copyedit } = state;
+  
+  if (highlightedText) {
+    return "updateHighlightedText";
   }
+  if (language || format || copyedit) {
+    return "rewriteArtifactTheme";
+  }
+  
+  return "updateHighlightedText";
+}
 
-  return new Send(state.next, {
-    ...state,
-  });
-};
+const builder = new StateGraph<NodeKey, OpenCanvasGraphReturnType>({
+  channels: {},
+});
 
-const builder = new StateGraph(OpenCanvasGraphAnnotation)
-  // Start node & edge
-  .addNode("generatePath", generatePath)
-  .addEdge(START, "generatePath")
-  // Nodes
-  // .addNode("replyToGeneralInput", replyToGeneralInput)
-  // .addNode("rewriteArtifact", rewriteArtifact)
-  .addNode("rewriteArtifactTheme", rewriteArtifactTheme)
-  //.addNode("rewriteCodeArtifactTheme", rewriteCodeArtifactTheme)
-  // .addNode("updateArtifact", updateArtifact)
-  .addNode("updateHighlightedText", updateHighlightedText)
-  // .addNode("generateArtifact", generateArtifact)
-  // .addNode("customAction", customAction)
-  // .addNode("generateFollowup", generateFollowup)
-  // .addNode("cleanState", cleanState)
-  // .addNode("generateTitle", generateTitleNode)
-  // .addNode("summarizer", summarizer)
-  // .addNode("webSearch", webSearchGraph)
-  // .addNode("routePostWebSearch", routePostWebSearch)
-  // Initial router
-  .addConditionalEdges("generatePath", routeNode, [
-    // "updateArtifact",
-    "rewriteArtifactTheme",
-    // "rewriteCodeArtifactTheme",
-    // "replyToGeneralInput",
-    // "generateArtifact",
-    // "rewriteArtifact",
-    // "customAction",
-    "updateHighlightedText",
-    // "webSearch",
-  ])
-  // Edges
-  // .addEdge("generateArtifact", "generateFollowup")
-  // .addEdge("updateArtifact", "generateFollowup")
-  // .addEdge("updateHighlightedText", "generateFollowup")
-  // .addEdge("rewriteArtifact", "generateFollowup")
-  // .addEdge("rewriteArtifactTheme", "generateFollowup")
-  // .addEdge("rewriteCodeArtifactTheme", "generateFollowup")
-  // .addEdge("customAction", "generateFollowup")
-  // .addEdge("webSearch", "routePostWebSearch")
-  // End edges
-  // .addEdge("replyToGeneralInput", "cleanState")
-  // .addConditionalEdges("cleanState", conditionallyGenerateTitle, [
-  //   END,
-  //   "generateTitle",
-  //   "summarizer",
-  // ])
-  // .addEdge("generateTitle", END)
-  // .addEdge("summarizer", END);
-  .addEdge("rewriteArtifactTheme", END)
-  .addEdge("updateHighlightedText", END);
+// Add all nodes
+builder.addNode("dummyStartNode", dummyStartNode);
+builder.addNode("rewriteArtifactTheme", rewriteArtifactTheme);
+builder.addNode("updateHighlightedText", updateHighlightedText);
+builder.addNode("humanApprover", humanApprover);
+builder.addNode("applyApprovedChanges", applyApprovedChanges);
+builder.addNode("rejectChanges", rejectChanges);
 
-export const graph = builder.compile().withConfig({ runName: "open_canvas" });
+// Define the graph flow connections
+builder.addEdge("__start__", "dummyStartNode");
+builder.addConditionalEdges("dummyStartNode", routeAfterStart, {
+  "rewriteArtifactTheme": "rewriteArtifactTheme",
+  "updateHighlightedText": "updateHighlightedText",
+});
+
+builder.addEdge("rewriteArtifactTheme", "humanApprover");
+builder.addEdge("updateHighlightedText", "humanApprover");
+
+// Connect processing nodes to human approval
+builder.addConditionalEdges("humanApprover", apply_or_reject_changes,
+  {
+    "applyApprovedChanges": "applyApprovedChanges",
+    "rejectChanges": "rejectChanges",
+  }
+);
+
+// Connect final nodes to end
+builder.addEdge("applyApprovedChanges", "__end__");
+builder.addEdge("rejectChanges", "__end__");
+
+// Finally, compile the graph.
+export const graph = builder.compile();
+
+// Define which nodes can be interrupted for human interaction
+graph.interruptBefore = ["humanApprover"];

@@ -28,6 +28,7 @@ import {
   OpenCanvasGraphReturnType,
 } from "../state.js";
 import { AIMessage } from "@langchain/core/messages";
+import { NodeInterrupt } from "@langchain/langgraph";
 
 export const rewriteArtifactTheme = async (
   state: typeof OpenCanvasGraphAnnotation.State,
@@ -127,54 +128,95 @@ export const rewriteArtifactTheme = async (
       throw new Error("Current artifact content is not markdown");
     }
 
-    let formattedPrompt = "";
-    if (state.language) {
-      formattedPrompt = CHANGE_ARTIFACT_LANGUAGE_PROMPT.replace("{artifactContent}", currentArtifactContent.fullMarkdown);
-    } else if (state.format) {
-      formattedPrompt = CHANGE_ARTIFACT_FORMAT.replace("{artifactContent}", currentArtifactContent.fullMarkdown);
-    } else if (state.copyedit) {
-      formattedPrompt = COPYEDIT_ARTIFACT_PROMPT.replace(
-        "{artifactContent}",
-        currentArtifactContent.fullMarkdown
-      );
-    } else {
-      throw new Error("No theme selected");
-    }
+    // If approval result is already set and is true, proceed with the update
+    if (state.approvalResult === true && state.proposedChanges) {
+      const newCurrIndex = state.artifact.contents.length + 1;
+      
+      const updatedArtifactContent: ArtifactMarkdownV3 = {
+        ...currentArtifactContent,
+        index: newCurrIndex,
+        fullMarkdown: state.proposedChanges.proposedText,
+      };
 
-    const newArtifactValues = await smallModel.invoke([
-      { role: "user", content: formattedPrompt },
-    ]);
-
-    let thinkingMessage: AIMessage | undefined;
-    let artifactContentText = newArtifactValues.content as string;
-
-    if (isThinkingModel(modelName)) {
-      const { thinking, response } =
-        extractThinkingAndResponseTokens(artifactContentText);
-      thinkingMessage = new AIMessage({
-        id: `thinking-${uuidv4()}`,
-        content: thinking,
-      });
-      artifactContentText = response;
-    }
-
-    const newArtifact: ArtifactV3 = {
-      ...state.artifact,
-      currentIndex: state.artifact.contents.length + 1,
-      contents: [
-        ...state.artifact.contents,
-        {
-          ...currentArtifactContent,
-          index: state.artifact.contents.length + 1,
-          fullMarkdown: artifactContentText,
+      return {
+        artifact: {
+          ...state.artifact,
+          currentIndex: newCurrIndex,
+          contents: [...state.artifact.contents, updatedArtifactContent],
         },
-      ],
-    };
-
-    return {
-      artifact: newArtifact,
-      messages: [...(thinkingMessage ? [thinkingMessage] : [])],
-      _messages: [...(thinkingMessage ? [thinkingMessage] : [])],
-    };
+        approvalResult: undefined,
+        proposedChanges: undefined,
+      };
+    }
+    
+    // If no approval result, generate the proposal
+    if (state.approvalResult === undefined) {
+      // Determine which operation to perform
+      const operation = state.language ? "language" : 
+                       state.copyedit ? "copyedit" : 
+                       state.format ? "format" : "";
+      
+      if (!operation) {
+        throw new Error("No rewrite operation specified");
+      }
+      
+      // Get the current artifact content
+      const currentArtifactContent = state.artifact
+        ? getArtifactContent(state.artifact)
+        : undefined;
+      
+      if (!currentArtifactContent || !isArtifactMarkdownContent(currentArtifactContent)) {
+        throw new Error("No valid artifact found");
+      }
+      
+      // Select the appropriate prompt based on operation
+      let prompt;
+      if (state.language) {
+        prompt = CHANGE_ARTIFACT_LANGUAGE_PROMPT;
+      } else if (state.copyedit) {
+        prompt = COPYEDIT_ARTIFACT_PROMPT;
+      } else if (state.format) {
+        prompt = CHANGE_ARTIFACT_FORMAT;
+      }
+      
+      // Get the model and generate the rewrite
+      const model = await getModelFromConfig(config, { temperature: 0 });
+      const contextDocumentMessages = await createContextDocumentMessages(config);
+      
+      const recentHumanMessage = state._messages.findLast(
+        (message) => message.getType() === "human"
+      );
+      
+      if (!recentHumanMessage) {
+        throw new Error("No recent human message found");
+      }
+      
+      const isO1MiniModel = isUsingO1MiniModel(config);
+      const response = await model.invoke([
+        { role: isO1MiniModel ? "user" : "system", content: prompt },
+        ...contextDocumentMessages,
+        recentHumanMessage,
+      ]);
+      
+      const responseContent = response.content as string;
+      
+      // Save the proposed changes
+      const proposedChanges = {
+        currentText: currentArtifactContent.fullMarkdown,
+        proposedText: responseContent,
+        metadata: {
+          operation,
+        }
+      };
+      
+      // Interrupt the graph to wait for user approval
+      throw new NodeInterrupt(
+        `Please review and approve the ${operation} changes`,
+        { proposedChanges }
+      );
+    }
+    
+    // If approval was false, return without changes
+    return {};
   }
 };
