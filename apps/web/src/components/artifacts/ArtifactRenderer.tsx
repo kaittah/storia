@@ -9,7 +9,7 @@ import { EditorView } from "@codemirror/view";
 import { HumanMessage } from "@langchain/core/messages";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { ActionsToolbar, CodeToolBar } from "./actions_toolbar";
+import { CodeToolBar } from "./actions_toolbar";
 import { CodeRenderer } from "./CodeRenderer";
 import { TextRenderer } from "./TextRenderer";
 import { CustomQuickActions } from "./actions_toolbar/custom";
@@ -379,12 +379,12 @@ function ArtifactRendererComponent(props: ArtifactRendererProps) {
         user={user}
         isTextSelected={isSelectionActive || selectedBlocks !== undefined}
       />
-      {currentArtifactContent.type === "text" ? (
+      {/* {currentArtifactContent.type === "text" ? (
         <ActionsToolbar
           streamMessage={streamMessage}
           isTextSelected={isSelectionActive || selectedBlocks !== undefined}
         />
-      ) : null}
+      ) : null} */}
       {currentArtifactContent.type === "code" ? (
         <CodeToolBar
           streamMessage={streamMessage}

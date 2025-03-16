@@ -126,9 +126,7 @@ export function CustomQuickActions(props: CustomQuickActionsProps) {
         <DropdownMenuTrigger className="fixed bottom-4 right-20" asChild>
           <TooltipIconButton
             tooltip={
-              props.isTextSelected
-                ? "Quick actions disabled while text is selected"
-                : "Custom quick actions"
+              "Workflow"
             }
             variant="outline"
             className={cn(
