@@ -411,22 +411,32 @@ export function TextRendererComponent(props: TextRendererProps) {
       if (!editor) return;
 
       try {
-        const markdownString = editor.blocksToMarkdownLossy(editor.document);
-        setRawMarkdown(markdownString);
-        setArtifact((prev: ArtifactV3 | undefined) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            contents: prev.contents.map((c) => {
-              if (c.index === prev.currentIndex && c.type === "text") {
-                return {
-                  ...c,
-                  fullMarkdown: markdownString,
-                } as ArtifactMarkdownV3;
-              }
-              return c;
-            }),
-          } as ArtifactV3;
+        // This returns a Promise<string>, so we need to handle it properly
+        editor.blocksToMarkdownLossy(editor.document).then(markdownString => {
+          setRawMarkdown(markdownString);
+          
+          // Update artifact with proper typing
+          setArtifact((prev: ArtifactV3 | undefined) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              contents: prev.contents.map((c) => {
+                if (c.index === prev.currentIndex && c.type === "text") {
+                  const updatedContent: ArtifactMarkdownV3 = {
+                    ...c,
+                    type: "text",
+                    fullMarkdown: markdownString,
+                    index: c.index,
+                    title: c.title
+                  };
+                  return updatedContent;
+                }
+                return c;
+              }),
+            } as ArtifactV3;
+          });
+        }).catch(error => {
+          console.error("Error converting blocks to markdown:", error);
         });
       } catch (error) {
         console.error("Error in onChange handler:", error);
@@ -437,7 +447,7 @@ export function TextRendererComponent(props: TextRendererProps) {
 
   // Wrap the debounced version separately
   const debouncedOnChange = useMemo(
-    () => debounce(onChange, 300),
+    () => debounce((value: any) => onChange(value), 300),
     [onChange]
   );
 
@@ -464,12 +474,22 @@ export function TextRendererComponent(props: TextRendererProps) {
             ? content.substring(0, 100000) + "... (content truncated for performance)"
             : content;
             
+          // Wait for the async operation to complete
           const blocks = await editor.tryParseMarkdownToBlocks(safeContent);
           
           const blockSignature = JSON.stringify(blocks).substring(0, 100);
           if (lastBlockSignatureRef.current !== blockSignature) {
-            editor.replaceBlocks(editor.document, blocks);
+            // Wait for the blocks to be replaced
+            await editor.replaceBlocks(editor.document, blocks);
             lastBlockSignatureRef.current = blockSignature;
+            
+            // Get the current content as a string after the blocks are updated
+            try {
+              const updatedMarkdown = await editor.blocksToMarkdownLossy(editor.document);
+              setRawMarkdown(updatedMarkdown); // Now properly awaiting the Promise
+            } catch (error) {
+              console.error("Error getting markdown from blocks:", error);
+            }
           }
         } catch (error) {
           console.error("Error updating editor content:", error);
@@ -634,9 +654,16 @@ export function TextRendererComponent(props: TextRendererProps) {
               theme="light"
               formattingToolbar={false}
               slashMenu={false}
-              onCompositionStartCapture={() => (isComposition.current = true)}
-              onCompositionEndCapture={() => (isComposition.current = false)}
-              onChange={debouncedOnChange}
+              onCompositionStartCapture={(e: React.CompositionEvent) => (isComposition.current = true)}
+              onCompositionEndCapture={(e: React.CompositionEvent) => (isComposition.current = false)}
+              onChange={() => {
+                if (editor) {
+                  // Use the same method as elsewhere in the code
+                  editor.blocksToMarkdownLossy(editor.document)
+                    .then(value => debouncedOnChange(value))
+                    .catch(error => console.error("Error converting blocks to markdown:", error));
+                }
+              }}
               editable={
                 !isStreaming || props.isEditing || !manuallyUpdatingArtifact
               }
