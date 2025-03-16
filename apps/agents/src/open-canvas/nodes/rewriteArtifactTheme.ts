@@ -14,11 +14,9 @@ import {
   getModelFromConfig,
 } from "../../utils.js";
 import {
-  ADD_EMOJIS_TO_ARTIFACT_PROMPT,
+  COPYEDIT_ARTIFACT_PROMPT,
   CHANGE_ARTIFACT_LANGUAGE_PROMPT,
-  CHANGE_ARTIFACT_LENGTH_PROMPT,
-  CHANGE_ARTIFACT_READING_LEVEL_PROMPT,
-  CHANGE_ARTIFACT_TO_PIRATE_PROMPT,
+  CHANGE_ARTIFACT_FORMAT,
 } from "../prompts.js";
 import {
   OpenCanvasGraphAnnotation,
@@ -50,57 +48,11 @@ export const rewriteArtifactTheme = async (
 
   let formattedPrompt = "";
   if (state.language) {
-    formattedPrompt = CHANGE_ARTIFACT_LANGUAGE_PROMPT.replace(
-      "{newLanguage}",
-      state.language
-    ).replace("{artifactContent}", currentArtifactContent.fullMarkdown);
-  } else if (state.readingLevel && state.readingLevel !== "pirate") {
-    let newReadingLevel = "";
-    switch (state.readingLevel) {
-      case "child":
-        newReadingLevel = "elementary school student";
-        break;
-      case "teenager":
-        newReadingLevel = "high school student";
-        break;
-      case "college":
-        newReadingLevel = "college student";
-        break;
-      case "phd":
-        newReadingLevel = "PhD student";
-        break;
-    }
-    formattedPrompt = CHANGE_ARTIFACT_READING_LEVEL_PROMPT.replace(
-      "{newReadingLevel}",
-      newReadingLevel
-    ).replace("{artifactContent}", currentArtifactContent.fullMarkdown);
-  } else if (state.readingLevel && state.readingLevel === "pirate") {
-    formattedPrompt = CHANGE_ARTIFACT_TO_PIRATE_PROMPT.replace(
-      "{artifactContent}",
-      currentArtifactContent.fullMarkdown
-    );
-  } else if (state.artifactLength) {
-    let newLength = "";
-    switch (state.artifactLength) {
-      case "shortest":
-        newLength = "much shorter than it currently is";
-        break;
-      case "short":
-        newLength = "slightly shorter than it currently is";
-        break;
-      case "long":
-        newLength = "slightly longer than it currently is";
-        break;
-      case "longest":
-        newLength = "much longer than it currently is";
-        break;
-    }
-    formattedPrompt = CHANGE_ARTIFACT_LENGTH_PROMPT.replace(
-      "{newLength}",
-      newLength
-    ).replace("{artifactContent}", currentArtifactContent.fullMarkdown);
-  } else if (state.regenerateWithEmojis) {
-    formattedPrompt = ADD_EMOJIS_TO_ARTIFACT_PROMPT.replace(
+    formattedPrompt = CHANGE_ARTIFACT_LANGUAGE_PROMPT.replace("{artifactContent}", currentArtifactContent.fullMarkdown);
+  } else if (state.format) {
+    formattedPrompt = CHANGE_ARTIFACT_FORMAT.replace("{artifactContent}", currentArtifactContent.fullMarkdown);
+  } else if (state.copyedit) {
+    formattedPrompt = COPYEDIT_ARTIFACT_PROMPT.replace(
       "{artifactContent}",
       currentArtifactContent.fullMarkdown
     );

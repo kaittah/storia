@@ -105,7 +105,8 @@ Ensure you ONLY reply with the rewritten artifact and NO other content.
 
 // ----- Text modification prompts -----
 
-export const CHANGE_ARTIFACT_LANGUAGE_PROMPT = `You are tasked with changing the language of the following artifact to {newLanguage}.
+export const CHANGE_ARTIFACT_LANGUAGE_PROMPT = `You are tasked with changing the language of the following artifact to English.
+If the artifact is already in English, you should return the original artifact unchanged.
 
 Here is the current content of the artifact:
 <artifact>
@@ -115,6 +116,8 @@ Here is the current content of the artifact:
 Rules and guidelines:
 <rules-guidelines>
 - ONLY change the language and nothing else.
+- If the artifact is already in English, ONLY return the original artifact unchanged.
+- Maintain the orginal meaning and voice of the artifact. Ensure accuracy and fluency of the new language.
 - Respond with ONLY the updated artifact, and no additional text before or after.
 - Do not wrap it in any XML tags you see in this prompt. Ensure it's just the updated artifact.
 </rules-guidelines>`;
@@ -148,8 +151,9 @@ Rules and guidelines:
 - Do not wrap it in any XML tags you see in this prompt. Ensure it's just the updated artifact.
 </rules-guidelines>`;
 
-export const CHANGE_ARTIFACT_LENGTH_PROMPT = `You are tasked with re-writing the following artifact to be {newLength}.
-Ensure you do not change the meaning or story behind the artifact, simply update the artifacts length to be {newLength}.
+export const CHANGE_ARTIFACT_FORMAT = `You are tasked with formatting the following artifact for publication. Keep the original wording.
+Only make changes to the formatting, not the content. You may add line breaks, indents, or other changes to spacing and punctuation.
+You MAY NOT change any of the words.
 
 Here is the current content of the artifact:
 <artifact>
@@ -162,8 +166,129 @@ Rules and guidelines:
 - Do not wrap it in any XML tags you see in this prompt. Ensure it's just the updated artifact.
 </rules-guidelines>`;
 
-export const ADD_EMOJIS_TO_ARTIFACT_PROMPT = `You are tasked with revising the following artifact by adding emojis to it.
-Ensure you do not change the meaning or story behind the artifact, simply include emojis throughout the text where appropriate.
+export const COPYEDIT_ARTIFACT_PROMPT = `You are tasked with either 1. returning the exact artifact unchanged, or 2. revising the following artifact with small copy edits.
+
+You must follow these rules and guidelines when copyediting the artifact:
+COPYEDITING PRIMER: A quick reference guide for common edits
+
+✨Big-picture reminder: Do not change, add, or delete words unless the meaning is unclear!✨
+
+
+COMMAS
+
+Add commas after dependent clauses (sentences starting with “when,” “if,” etc.) 
+“When I get home, I’m going to cuddle with my dog.”
+
+Add a comma in compound sentences (2+ subjects), but do not add a comma when 1 subject shares 2+ verbs
+ “I’m going to go home, and my dog will be waiting for me.” ; “I’m going to go home and make myself pizza.” 
+
+Add a comma before “and” in a list with 3+ items (also called an Oxford or serial comma <3)
+“They love unicorns, daffodils, and Star Wars movies.”
+
+Either separate or combine (most) comma splices (a comma conjoining two full sentences): 
+She ate cookies, they were sweet.” → “She ate cookies. They were sweet.” OR “She ate cookies and they were sweet.”
+
+Only add commas before “because” in cases of ambiguity (usually when the start of the statement is negative)
+“He didn’t run because he was scared.” → “He didn’t run because he was scared. He ran because he loved the feeling of the wind on his face.” VS. “He didn’t run, because he was scared.”
+
+NUMBERS
+
+Spell out:
+Numbers one through ninety-nine, plus whole numbers that end in hundred, thousand, or million (fifty-six, twenty-three thousand; 102)
+Money follows this same rule, though numerals are used for $1 million+ (two dollars, one thousand dollars; $418, $5 million)
+Numbers at the beginning of a sentence, no matter how wonky they are
+Grades, unless they’re in bylines (They’re in the sixth grade; she’s an eighth-grade student; grades 2-4)
+Ages (He is sixteen years old; they are a sixteen-year-old author)
+Percentages without a decimal (thirty-four percent, but 34.5 percent)
+Fractions, unless used in a recipe (three-fourths of the class; ¾ cup flour)
+
+Use numerals for:
+Time of day (6:00 a.m., though it’s spelled out if written as “six o’clock”)
+Addresses (826 Valencia), bus route numbers (38-Geary bus), locations with numerals in the name (Pier 39), measurements (9 feet), scores (we won 2–1), temperatures (56° Fahrenheit), phone numbers, dates (May 5)
+
+TITLES & PROPER NOUNS 
+
+Here’s a handy chart for treating titles of publications and other media. 
+Capitalize proper nouns, including made-up characters. 
+Italicize proper nouns minimally, focusing on published, narrative works. This includes creations such as movies, books, and console-specific video games. 
+Apps and websites are typically capitalized but not italicized. Citations are a style of their own, and are an exception to this rule.
+Capitalize names of courses, like “I’m taking AP Calculus” but not types of courses, like “there are three biology classes at this school.”
+Do not capitalize seasons, unless it’s part of a title. In the spring semester the Summer Course Catalogue will be published. 
+
+QUOTATIONS & DIALOGUE 
+
+Use a paragraph break after a change in speaker. 
+I said, “Goodbye!” and waved. I started to walk down the road. 
+“I’ll miss you,” she said. 
+Dialogue should be set off by a comma, which comes either inside or before the quotation marks. 
+“Let’s go,” she said. Her mother replied, “I’m coming!”
+If quotation does not function as dialogue, the quote should be treated grammatically as its particular grammatical function. 
+CNN reports that “Visitors to the zoo love the new panda.” 
+Use single quotes for quotes that fall within quoted passages.
+
+
+MISCELLANEOUS
+
+Two words, one word, or hyphenated? 
+Double-check two-word vs. one-word spellings in Merriam Webster
+Consult this handy-dandy Chicago Manual of Style table to solve all your hyphenation woes
+“Every day” is two words when used as a phrase (“I check my garden every day”), but one word as an adjective (“These are my everyday sneakers.”)
+Hyphens, en dashes, and em dashes: 
+Hyphens - are for compound words as noted above, without spaces. They are also sometimes used to indicate speaking effects like a stutter, but shouldn’t end a sentence. E.g. “I-I don’t know what—,” she stammered.
+En dashes – are for date and time ranges. No spaces surround them.
+Em dashes — are for hard breaks in speech—like interruptions—or parenthetical clauses. They are sometimes written as double hyphens, and will be changed to real em dashes in the typesetting process. No spaces surround them.
+
+Relative pronouns: Use “who” when referring to people or personified things. Honor the students’ usage of the pronoun “they”, whether as singular or plural (never change to “he or she.) 
+“She was a girl who loved to dance,” rather than, “She was a girl that loved to dance.”
+
+Ellipses: There should be fixed spaces before the ellipsis, between the periods and after the ellipsis ( . . . )
+Semi-colons: students seldom use these, so we avoid adding them to the writing in the editing process unless it’s something they do adeptly elsewhere. Correct a run-on by breaking it into two sentences. 
+Punctuation at the end of a sentence: If using multiple exclamation or question marks, limit to a max of 3
+
+EXCEPTIONS TO THE CHICAGO MANUAL 
+Words in languages other than English: Here we are an exception to the Chicago Manual Style rules. Leave words in non-English languages as the student wrote them (but do correct spelling and accent marks as needed.) Do not italicize if the author didn’t, leave italics if that’s how the author wrote them. 
+Always either write out United States or abbreviate as U.S. If it’s only appearing once or twice, spell it out. If it appears frequently, use the abbreviation.
+Do not change potential slang or African American English Vernacular usage. If there is a word you are unsure about, flag it to review with the author.
+Capitalize Black when referring to people, culture, communities. Do not capitalize the “w” in white. For rationale, see here.
+
+FORMATTING NON-PROSE 
+
+POETRY
+
+If a student uses punctuation in their poetry, ensure each sentence ends with punctuation where applicable, while preserving line breaks. If a student has opted out of adding punctuation, leave as is. 
+
+If a form eschews punctuation, like the haiku, allow each line to begin with a capital letter and end with no punctuation.  
+
+PLAYS
+
+In formatting plays, the scene descriptions are italicized, stage directions are italicized and in parentheses, and character names are in all caps. Use the following excerpt as an example: 
+
+SCENE ONE
+
+Mom and Jose are in the living room of their apartment. Jose wakes up to a knock on the door. He gets up slowly and checks who it is.
+
+LANDLORD: Sorry to wake you up early, but here. (passes Jose a paper)
+
+JOSE: You’re good. (takes the paper, and the landlord leaves) 
+
+Jose starts reading the paper. It’s saying rent is increasing by $600, and if they can’t pay, they are gonna get kicked out.
+
+
+
+Content: 
+
+Originality: The Author promises that the work they submit is “original,” which means that they created the work and wrote the story and did not copy someone else’s story or writing. 
+
+Respect for privacy: The Author also promises us that if the story is based on real people and actual events, that the description of such people and events is true and does not disclose private or personal facts about anyone else without first obtaining that person’s permission (facilitated by program staff/the students’ teacher). If you have any concerns about details in a story, check with the program lead. 
+
+Troubling content: If a student's writing causes concern for their or another person's well-being, check in with your supervisor immediately about next steps. If you suspect abuse or neglect, 826 staff are mandated reporters by law.
+
+Profanity: Profanity is best addressed at the tutoring/expectation-setting stage. All students should be coached to think carefully about the impact of using profanity. Younger students should be asked to come up with a surprising/unique/creative stand-in for curse words.
+
+In some projects with older students, profanity might be appropriate for addressing serious issues in an authentic way. In this case, the words can be published as written as long as the author and staff agree that they serve a purpose, and the book will contain a label saying it’s for mature readers. 
+
+To sum up: When editing profanity, either leave the word as written or remove the word, depending on the above context. Always consult program staff. 
+
 
 Here is the current content of the artifact:
 <artifact>
@@ -173,7 +298,7 @@ Here is the current content of the artifact:
 Rules and guidelines:
 </rules-guidelines>
 - Respond with ONLY the updated artifact, and no additional text before or after.
-- Ensure you respond with the entire updated artifact, including the emojis.
+- Ensure you respond with the entire updated artifact or the entire original artifact if you are not making any changes.
 - Do not wrap it in any XML tags you see in this prompt. Ensure it's just the updated artifact.
 </rules-guidelines>`;
 

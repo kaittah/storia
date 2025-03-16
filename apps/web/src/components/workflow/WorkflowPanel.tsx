@@ -3,6 +3,7 @@ import { PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import confetti from 'canvas-confetti';
+import { useGraphContext } from "@/contexts/GraphContext";
 
 const WORKFLOW_STEPS = [
   "Translate",
@@ -13,8 +14,25 @@ const WORKFLOW_STEPS = [
 export function WorkflowPanel() {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const { graphData } = useGraphContext();
 
   const handleStepComplete = () => {
+    // Set the appropriate state flags based on the current step
+    const stepName = WORKFLOW_STEPS[currentStep];
+    
+    if (graphData && typeof graphData.streamMessage === 'function') {
+      if (stepName === "Translate") {
+        graphData.streamMessage({ language: true, copyedit: false, format: false });
+      } else if (stepName === "Grammar Edit") {
+        graphData.streamMessage({ copyedit: true, language: false, format: false });
+      } else if (stepName === "Formatting") {
+        graphData.streamMessage({ format: true, copyedit: false, language: false });
+      }
+    } else {
+      console.error("streamMessage is not available in GraphContext:", graphData);
+    }
+
+    // Mark the step as completed and move to the next step
     setCompletedSteps([...completedSteps, currentStep]);
     setCurrentStep(currentStep + 1);
   };

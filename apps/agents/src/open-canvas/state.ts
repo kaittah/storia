@@ -1,7 +1,5 @@
 import { BaseMessage, BaseMessageLike } from "@langchain/core/messages";
 import {
-  ArtifactLengthOptions,
-  LanguageOptions,
   ProgrammingLanguageOptions,
   ReadingLevelOptions,
   CodeHighlight,
@@ -92,15 +90,15 @@ export const OpenCanvasGraphAnnotation = Annotation.Root({
   /**
    * The language to translate the artifact to.
    */
-  language: Annotation<LanguageOptions | undefined>,
+  language: Annotation<boolean | undefined>,
   /**
    * The length of the artifact to regenerate to.
    */
-  artifactLength: Annotation<ArtifactLengthOptions | undefined>,
+  format: Annotation<boolean | undefined>,
   /**
    * Whether or not to regenerate with emojis.
    */
-  regenerateWithEmojis: Annotation<boolean | undefined>,
+  copyedit: Annotation<boolean | undefined>,
   /**
    * The reading level to adjust the artifact to.
    */
