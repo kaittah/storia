@@ -9,7 +9,6 @@ import {
 } from "@storia/shared/types";
 import {
   createContextDocumentMessages,
-  ensureStoreInConfig,
   getModelConfig,
   getModelFromConfig,
   isUsingO1MiniModel,
@@ -49,7 +48,6 @@ export const updateArtifact = async (
     );
   }
 
-  const store = ensureStoreInConfig(config);
   const assistantId = config.configurable?.assistant_id;
   if (!assistantId) {
     throw new Error("`assistant_id` not found in configurable");
