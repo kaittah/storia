@@ -4,8 +4,7 @@ import {
   getArtifactContent,
   isArtifactMarkdownContent,
 } from "@storia/shared/utils/artifacts";
-import { Reflections } from "@storia/shared/types";
-import { ensureStoreInConfig, formatReflections } from "../../utils.js";
+import { ensureStoreInConfig} from "../../utils.js";
 import { FOLLOWUP_ARTIFACT_PROMPT } from "../prompts.js";
 import {
   OpenCanvasGraphAnnotation,
@@ -30,14 +29,7 @@ export const generateFollowup = async (
   if (!assistantId) {
     throw new Error("`assistant_id` not found in configurable");
   }
-  const memoryNamespace = ["memories", assistantId];
-  const memoryKey = "reflection";
-  const memories = await store.get(memoryNamespace, memoryKey);
-  const memoriesAsString = memories?.value
-    ? formatReflections(memories.value as Reflections, {
-        onlyContent: true,
-      })
-    : "No reflections found.";
+
 
   const currentArtifactContent = state.artifact
     ? getArtifactContent(state.artifact)
@@ -53,7 +45,6 @@ export const generateFollowup = async (
     "{artifactContent}",
     artifactContent || "No artifacts generated yet."
   )
-    .replace("{reflections}", memoriesAsString)
     .replace(
       "{conversation}",
       state._messages

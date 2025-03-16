@@ -8,10 +8,9 @@ import { z } from "zod";
 import { ARTIFACT_TOOL_SCHEMA } from "./schemas.js";
 
 export const formatNewArtifactPrompt = (
-  memoriesAsString: string,
   modelName: string
 ): string => {
-  return NEW_ARTIFACT_PROMPT.replace("{reflections}", memoriesAsString).replace(
+  return NEW_ARTIFACT_PROMPT.replace(
     "{disableChainOfThought}",
     modelName.includes("claude")
       ? "\n\nIMPORTANT: Do NOT preform chain of thought beforehand. Instead, go STRAIGHT to generating the tool response. This is VERY important."
