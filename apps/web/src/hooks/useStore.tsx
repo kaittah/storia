@@ -14,6 +14,7 @@ export function useStore() {
   const getCustomQuickActions = async (
     userId: string
   ): Promise<CustomQuickAction[] | undefined> => {
+    return undefined;
     setIsLoadingQuickActions(true);
     try {
       const res = await fetch("/api/store/get", {
