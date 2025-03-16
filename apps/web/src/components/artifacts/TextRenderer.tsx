@@ -1,5 +1,5 @@
-import { Dispatch, SetStateAction, useEffect, useRef, useState, useCallback } from "react";
-import { ArtifactMarkdownV3 } from "@storia/shared/types";
+import { Dispatch, SetStateAction, useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { ArtifactV3, ArtifactMarkdownV3 } from "@storia/shared/types";
 import "@blocknote/core/fonts/inter.css";
 import {
   getDefaultReactSlashMenuItems,
@@ -217,6 +217,9 @@ export function TextRendererComponent(props: TextRendererProps) {
   const [originalBlocks, setOriginalBlocks] = useState<string[]>([]);
   const [currentBlocks, setCurrentBlocks] = useState<string[]>([]);
   
+  // Add this at the top with other refs
+  const lastBlockSignatureRef = useRef<string>();
+  
   // Toggle a diff block's expanded state
   const toggleDiffExpand = (blockIndex: number) => {
     setExpandedDiffs(prev => {
@@ -368,10 +371,10 @@ export function TextRendererComponent(props: TextRendererProps) {
     // Create updated blocks with all edits applied
     const newBlocks = [...currentBlocks];
     
-    // Apply all edits
-    for (const [blockIndex, { edited }] of editedBlocks.entries()) {
+    // Convert Map entries to array before iterating
+    Array.from(editedBlocks.entries()).forEach(([blockIndex, { edited }]) => {
       newBlocks[blockIndex] = edited;
-    }
+    });
     
     // Join blocks back together
     const newMarkdown = newBlocks.join('\n\n');
@@ -401,18 +404,16 @@ export function TextRendererComponent(props: TextRendererProps) {
     setHasEditingOperation(false);
   };
 
-  // Potential timeout fixes:
-
-  // 1. Debounce the onChange handler to prevent rapid state updates
+  // Fix the onChange handler type
   const onChange = useCallback(
-    debounce((v: any) => {
+    (value: any) => {
       if (isComposition.current) return;
       if (!editor) return;
 
       try {
         const markdownString = editor.blocksToMarkdownLossy(editor.document);
         setRawMarkdown(markdownString);
-        setArtifact((prev) => {
+        setArtifact((prev: ArtifactV3 | undefined) => {
           if (!prev) return prev;
           return {
             ...prev,
@@ -421,46 +422,50 @@ export function TextRendererComponent(props: TextRendererProps) {
                 return {
                   ...c,
                   fullMarkdown: markdownString,
-                };
+                } as ArtifactMarkdownV3;
               }
               return c;
             }),
-          };
+          } as ArtifactV3;
         });
       } catch (error) {
         console.error("Error in onChange handler:", error);
       }
-    }, 300),
+    },
     [editor, setArtifact]
   );
 
-  // 2. Add memoization for expensive calculations in the updateContent function
+  // Wrap the debounced version separately
+  const debouncedOnChange = useMemo(
+    () => debounce(onChange, 300),
+    [onChange]
+  );
+
+  // Fix the updateContent function
   useEffect(() => {
     const updateContent = async () => {
       if (!artifact) return;
       
-      // Add early return to prevent unnecessary processing
       if (prevArtifactRef.current === artifact) {
         return;
       }
       
-      // Use a more efficient check for detecting changes
-      const currentContent = artifact.contents[artifact.currentIndex]?.fullMarkdown || "";
-      if (rawMarkdown === currentContent) {
+      const currentContent = getArtifactContent(artifact);
+      if (!isArtifactMarkdownContent(currentContent)) return;
+      
+      const content = currentContent.fullMarkdown;
+      if (rawMarkdown === content) {
         return;
       }
       
-      // Cache DOM operations and only update when needed
-      if (editor && currentContent) {
+      if (editor && content) {
         try {
-          // Limit content size if necessary to prevent processing huge documents
-          const safeContent = currentContent.length > 100000 
-            ? currentContent.substring(0, 100000) + "... (content truncated for performance)"
-            : currentContent;
+          const safeContent = content.length > 100000 
+            ? content.substring(0, 100000) + "... (content truncated for performance)"
+            : content;
             
           const blocks = await editor.tryParseMarkdownToBlocks(safeContent);
           
-          // Only update blocks if they've actually changed
           const blockSignature = JSON.stringify(blocks).substring(0, 100);
           if (lastBlockSignatureRef.current !== blockSignature) {
             editor.replaceBlocks(editor.document, blocks);
@@ -474,11 +479,14 @@ export function TextRendererComponent(props: TextRendererProps) {
       prevArtifactRef.current = artifact;
     };
     
-    // Use requestIdleCallback or setTimeout to defer non-critical updates
     if (typeof requestIdleCallback !== 'undefined') {
-      requestIdleCallback(() => updateContent());
+      requestIdleCallback(() => {
+        updateContent().catch(console.error);
+      });
     } else {
-      setTimeout(updateContent, 0);
+      setTimeout(() => {
+        updateContent().catch(console.error);
+      }, 0);
     }
   }, [artifact, editor, rawMarkdown]);
 
@@ -602,7 +610,7 @@ export function TextRendererComponent(props: TextRendererProps) {
         <Textarea
           className="whitespace-pre-wrap font-mono text-sm px-[54px] border-0 shadow-none h-full outline-none ring-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
           value={rawMarkdown}
-          onChange={onChange}
+          onChange={debouncedOnChange}
         />
       ) : (
         <>
@@ -628,7 +636,7 @@ export function TextRendererComponent(props: TextRendererProps) {
               slashMenu={false}
               onCompositionStartCapture={() => (isComposition.current = true)}
               onCompositionEndCapture={() => (isComposition.current = false)}
-              onChange={onChange}
+              onChange={debouncedOnChange}
               editable={
                 !isStreaming || props.isEditing || !manuallyUpdatingArtifact
               }
