@@ -14,6 +14,9 @@ import {
 } from "@storia/shared/types";
 import React, { useEffect, useState } from "react";
 import { Thread } from "@langchain/langgraph-sdk";
+import { WandSparkles } from "lucide-react";
+import { TooltipIconButton } from "@/components/ui/assistant-ui/tooltip-icon-button";
+import { WorkflowPanel } from "@/components/workflow/WorkflowPanel";
 
 export function CanvasComponent() {
   const { graphData } = useGraphContext();
@@ -23,6 +26,7 @@ export function CanvasComponent() {
   const [chatCollapsed, setChatCollapsed] = useState(true);
   const [googleDocsUrl, setGoogleDocsUrl] = useState("https://docs.google.com/document/d/1gA3JAGFbKPtZ418m1qQKxaTjhZAg00HYn1tGV2aauys/edit?tab=t.0");
   const [isLoadingDoc, setIsLoadingDoc] = useState(false);
+  const [isWorkflowOpen, setIsWorkflowOpen] = useState(false);
 
   const handleGoogleDocsImport = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,6 +218,22 @@ export function CanvasComponent() {
             setChatCollapsed={setChatCollapsed}
           />
         </div>
+        
+        {isWorkflowOpen && (
+          <div className="fixed bottom-20 right-20 z-50">
+            <WorkflowPanel />
+          </div>
+        )}
+        
+        <TooltipIconButton
+          tooltip="Workflow"
+          variant="outline"
+          className="fixed bottom-4 right-20 transition-colors w-[48px] h-[48px] p-0 rounded-xl"
+          delayDuration={400}
+          onClick={() => setIsWorkflowOpen(!isWorkflowOpen)}
+        >
+          <WandSparkles className="w-[26px] h-[26px] hover:text-gray-900 transition-colors" />
+        </TooltipIconButton>
     </div>
   );
 }
