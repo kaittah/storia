@@ -167,13 +167,25 @@ function ViewRawText({
   );
 }
 
-export interface TextRendererProps {
+interface TextRendererProps {
+  content?: string;
   isEditing: boolean;
-  isHovering: boolean;
   isInputVisible: boolean;
+  isHovering: boolean;
 }
 
-export function TextRendererComponent(props: TextRendererProps) {
+export const TextRenderer: React.FC<TextRendererProps> = ({
+  content,
+  isEditing,
+  isInputVisible,
+  isHovering,
+}) => {
+  const { graphData } = useGraphContext();
+  const { artifact } = graphData;
+  
+  // Use passed content if available, otherwise get from artifact
+  const markdownContent = content || (artifact ? getArtifactContent(artifact)?.fullMarkdown : '');
+
   // Create editor with a proper initial content structure
   const editor = useCreateBlockNote({
     initialContent: [{
@@ -184,9 +196,7 @@ export function TextRendererComponent(props: TextRendererProps) {
     }]
   });
   
-  const { graphData } = useGraphContext();
   const {
-    artifact,
     isStreaming,
     updateRenderedArtifactRequired,
     firstTokenReceived,
@@ -618,9 +628,39 @@ export function TextRendererComponent(props: TextRendererProps) {
     );
   };
 
+  useEffect(() => {
+    console.log("TextRenderer received content:", content?.substring(0, 100));
+    
+    const updateContent = async () => {
+      if (!content) {
+        console.log("No content provided to TextRenderer");
+        return;
+      }
+      
+      try {
+        if (editor) {
+          console.log("Parsing markdown to blocks...");
+          // Convert markdown to blocks using BlockNote's API
+          const blocks = await editor.tryParseMarkdownToBlocks(content);
+          console.log("Parsed blocks:", blocks);
+          
+          // Then replace the blocks in the editor
+          if (blocks && blocks.length > 0) {
+            await editor.replaceBlocks(editor.document, blocks);
+            console.log("Blocks replaced in editor");
+          }
+        }
+      } catch (error) {
+        console.error("Error updating editor content:", error);
+      }
+    };
+    
+    updateContent();
+  }, [content, editor]);
+
   return (
     <div className="w-full h-full mt-2 flex flex-col border-t-[1px] border-gray-200 overflow-y-auto py-5 relative">
-      {props.isHovering && artifact && (
+      {isHovering && artifact && (
         <div className="absolute flex gap-2 top-2 right-4 z-10">
           <CopyText currentArtifactContent={getArtifactContent(artifact)} />
           <ViewRawText isRawView={isRawView} setIsRawView={setIsRawView} />
@@ -665,7 +705,7 @@ export function TextRendererComponent(props: TextRendererProps) {
                 }
               }}
               editable={
-                !isStreaming || props.isEditing || !manuallyUpdatingArtifact
+                !isStreaming || isEditing || !manuallyUpdatingArtifact
               }
               editor={editor}
               className={cn(
@@ -695,6 +735,4 @@ export function TextRendererComponent(props: TextRendererProps) {
       )}
     </div>
   );
-}
-
-export const TextRenderer = React.memo(TextRendererComponent);
+};

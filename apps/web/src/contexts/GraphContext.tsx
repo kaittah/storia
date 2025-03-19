@@ -92,6 +92,20 @@ interface GraphData {
   clearState: () => void;
   switchSelectedThread: (thread: Thread) => void;
   setUpdateRenderedArtifactRequired: Dispatch<SetStateAction<boolean>>;
+  proposedChanges: {
+    currentText: string;
+    proposedText: string;
+    metadata: Record<string, any>;
+  } | undefined;
+  isApprovalDialogOpen: boolean;
+  setProposedChanges: Dispatch<SetStateAction<{
+    currentText: string;
+    proposedText: string;
+    metadata: Record<string, any>;
+  } | undefined>>;
+  setIsApprovalDialogOpen: Dispatch<SetStateAction<boolean>>;
+  approveChanges: () => Promise<void>;
+  rejectChanges: () => Promise<void>;
 }
 
 type GraphContentType = {
@@ -144,6 +158,12 @@ export function GraphProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState(false);
   const [artifactUpdateFailed, setArtifactUpdateFailed] = useState(false);
   const [searchEnabled, setSearchEnabled] = useState(false);
+  const [proposedChanges, setProposedChanges] = useState<{
+    currentText: string;
+    proposedText: string;
+    metadata: Record<string, any>;
+  }>();
+  const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
 
   const [_, setWebSearchResultsId] = useQueryState(
     WEB_SEARCH_RESULTS_QUERY_PARAM
@@ -1450,6 +1470,66 @@ export function GraphProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const approveChanges = async () => {
+    if (!threadData.threadId) return;
+    
+    try {
+      const client = new Client({
+        apiUrl: `http://localhost:${process.env.PORT}`,
+      });
+      
+      // Update thread state with approval
+      await client.threads.updateState(threadData.threadId, {
+        approvalResult: true,
+        proposedChanges,
+      });
+      
+      // Resume the run
+      await client.runs.resume(threadData.threadId);
+      
+      // Close the dialog
+      setIsApprovalDialogOpen(false);
+    } catch (error) {
+      console.error("Error approving changes:", error);
+      toast({
+        title: "Error",
+        description: "Failed to approve changes",
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  };
+  
+  // Handle rejecting changes
+  const rejectChanges = async () => {
+    if (!threadData.threadId) return;
+    
+    try {
+      const client = new Client({
+        apiUrl: `http://localhost:${process.env.PORT}`,
+      });
+      
+      // Update thread state with rejection
+      await client.threads.updateState(threadData.threadId, {
+        approvalResult: false,
+      });
+      
+      // Resume the run
+      await client.runs.resume(threadData.threadId);
+      
+      // Close the dialog
+      setIsApprovalDialogOpen(false);
+    } catch (error) {
+      console.error("Error rejecting changes:", error);
+      toast({
+        title: "Error",
+        description: "Failed to reject changes",
+        variant: "destructive",
+        duration: 5000,
+      });
+    }
+  };
+
   const contextValue: GraphContentType = {
     graphData: {
       runId,
@@ -1478,6 +1558,12 @@ export function GraphProvider({ children }: { children: ReactNode }) {
       clearState,
       switchSelectedThread,
       setUpdateRenderedArtifactRequired,
+      proposedChanges,
+      isApprovalDialogOpen,
+      setProposedChanges,
+      setIsApprovalDialogOpen,
+      approveChanges,
+      rejectChanges,
     },
   };
 

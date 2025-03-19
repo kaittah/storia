@@ -23,7 +23,16 @@ ctx.addEventListener("message", async (event: MessageEvent<StreamConfig>) => {
     });
 
     for await (const chunk of stream) {
-      // Serialize the chunk and post it back to the main thread
+      // Check for node interrupts specifically
+      if (chunk.event === "on_interrupt") {
+        ctx.postMessage({
+          type: "interrupt",
+          data: JSON.stringify(chunk),
+        });
+        continue;
+      }
+      
+      // Regular chunks
       ctx.postMessage({
         type: "chunk",
         data: JSON.stringify(chunk),

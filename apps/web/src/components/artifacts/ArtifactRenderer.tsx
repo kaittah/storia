@@ -4,12 +4,14 @@ import {
   ArtifactCodeV3,
   ArtifactMarkdownV3,
   ProgrammingLanguageOptions,
+  ArtifactV3,
+  ArtifactV4,
 } from "@storia/shared/types";
 import { EditorView } from "@codemirror/view";
 import { HumanMessage } from "@langchain/core/messages";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { ActionsToolbar, CodeToolBar } from "./actions_toolbar";
+import { CodeToolBar } from "./actions_toolbar";
 import { CodeRenderer } from "./CodeRenderer";
 import { TextRenderer } from "./TextRenderer";
 import { CustomQuickActions } from "./actions_toolbar/custom";
@@ -20,6 +22,7 @@ import { useGraphContext } from "@/contexts/GraphContext";
 import { ArtifactHeader } from "./header";
 import { useUserContext } from "@/contexts/UserContext";
 import { useAssistantContext } from "@/contexts/AssistantContext";
+import { ArtifactV4Renderer } from './ArtifactV4Renderer';
 
 export interface ArtifactRendererProps {
   isEditing: boolean;
@@ -296,6 +299,21 @@ function ArtifactRendererComponent(props: ArtifactRendererProps) {
     return <div className="w-full h-full"></div>;
   }
 
+  // Add debug logging
+  console.log("Current artifact:", artifact);
+  
+  // Check if the artifact is V4
+  const isV4Artifact = 'contents' in artifact && 
+    artifact.contents.length > 0 && 
+    'articles' in artifact.contents[0];
+  
+  console.log("Is V4 Artifact:", isV4Artifact);
+
+  if (isV4Artifact) {
+    console.log("Rendering V4 artifact");
+    return <ArtifactV4Renderer artifact={artifact as unknown as ArtifactV4} />;
+  }
+
   const isBackwardsDisabled =
     artifact.contents.length === 1 ||
     currentArtifactContent.index === 1 ||
@@ -379,12 +397,12 @@ function ArtifactRendererComponent(props: ArtifactRendererProps) {
         user={user}
         isTextSelected={isSelectionActive || selectedBlocks !== undefined}
       />
-      {currentArtifactContent.type === "text" ? (
+      {/* {currentArtifactContent.type === "text" ? (
         <ActionsToolbar
           streamMessage={streamMessage}
           isTextSelected={isSelectionActive || selectedBlocks !== undefined}
         />
-      ) : null}
+      ) : null} */}
       {currentArtifactContent.type === "code" ? (
         <CodeToolBar
           streamMessage={streamMessage}

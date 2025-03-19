@@ -53,14 +53,14 @@ export async function generatePath(
     }
   }
 
-  if (state.highlightedCode) {
-    return {
-      next: "updateArtifact",
-      ...(newMessages.length
-        ? { messages: newMessages, _messages: newMessages }
-        : {}),
-    };
-  }
+  // if (state.highlightedCode) {
+  //   return {
+  //     next: "updateArtifact",
+  //     ...(newMessages.length
+  //       ? { messages: newMessages, _messages: newMessages }
+  //       : {}),
+  //   };
+  // }
   if (state.highlightedText) {
     return {
       next: "updateHighlightedText",
@@ -72,12 +72,12 @@ export async function generatePath(
 
   if (
     state.language ||
-    state.artifactLength ||
-    state.regenerateWithEmojis ||
-    state.readingLevel
+    state.format ||
+    state.copyedit
   ) {
     return {
       next: "rewriteArtifactTheme",
+      isWorkflowOperation: true,
       ...(newMessages.length
         ? { messages: newMessages, _messages: newMessages }
         : {}),

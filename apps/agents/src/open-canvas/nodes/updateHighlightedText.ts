@@ -4,20 +4,13 @@ import {
   getModelFromConfig,
   isUsingO1MiniModel,
 } from "../../utils.js";
-import { BaseLanguageModelInput } from "@langchain/core/language_models/base";
-import { AIMessageChunk } from "@langchain/core/messages";
-import { RunnableBinding } from "@langchain/core/runnables";
+import { HumanMessage } from "@langchain/core/messages";
 import { LangGraphRunnableConfig } from "@langchain/langgraph";
-import { ConfigurableChatModelCallOptions } from "langchain/chat_models/universal";
-import {
-  getArtifactContent,
-  isArtifactMarkdownContent,
-} from "@storia/shared/utils/artifacts";
 import { ArtifactMarkdownV3 } from "@storia/shared/types";
 import {
-  OpenCanvasGraphAnnotation,
   OpenCanvasGraphReturnType,
 } from "../state.js";
+import { NodeInterrupt } from "@langchain/langgraph";
 
 const PROMPT = `You are an expert AI writing assistant, tasked with rewriting some text a user has selected. The selected text is nested inside a larger 'block'. You should always respond with ONLY the updated text block in accordance with the user's request.
 You should always respond with the full markdown text block, as it will simply replace the existing block in the artifact.
@@ -29,115 +22,150 @@ The blocks will be joined later on, so you do not need to worry about the format
 # Text block
 {textBlocks}
 
-Your task is to rewrite the sourounding content to fulfill the users request. The selected text content you are provided above has had the markdown styling removed, so you can focus on the text itself.
-However, ensure you ALWAYS respond with the full markdown text block, including any markdown syntax.
-NEVER wrap your response in any additional markdown syntax, as this will be handled by the system. Do NOT include a triple backtick wrapping the text block, unless it was present in the original text block.
-You should NOT change anything EXCEPT the selected text. The ONLY instance where you may update the sourounding text is if it is necessary to make the selected text make sense.
-You should ALWAYS respond with the full, updated text block, including any formatting, e.g newlines, indents, markdown syntax, etc. NEVER add extra syntax or formatting unless the user has specifically requested it.
-If you observe partial markdown, this is OKAY because you are only updating a partial piece of the text.
+# Additional information
+{info}
 
-Ensure you reply with the FULL text block, including the updated selected text. NEVER include only the updated selected text, or additional prefixes or suffixes.`;
+# User request
+{request}
+
+Only reply with the updated text, no explanations.`;
 
 /**
- * Update an existing artifact based on the user's query.
+ * Update the highlighted text in the artifact based on the user's request.
  */
 export const updateHighlightedText = async (
-  state: typeof OpenCanvasGraphAnnotation.State,
+  state: any,
   config: LangGraphRunnableConfig
 ): Promise<OpenCanvasGraphReturnType> => {
-  const { modelProvider, modelName } = getModelConfig(config);
-  let model: RunnableBinding<
-    BaseLanguageModelInput,
-    AIMessageChunk,
-    ConfigurableChatModelCallOptions
-  >;
-  if (modelProvider.includes("openai") || modelName.includes("3-5-sonnet")) {
-    // Custom model is intelligent enough for updating artifacts
-    model = (
-      await getModelFromConfig(config, {
-        temperature: 0,
-      })
-    ).withConfig({ runName: "update_highlighted_markdown" });
-  } else {
-    // Custom model is not intelligent enough for updating artifacts
-    model = (
-      await getModelFromConfig(
-        {
-          ...config,
-          configurable: {
-            customModelName: "gpt-4o",
-          },
+  // Direct property access instead of function calls
+  const artifact = state.artifact;
+  const highlightedText = state.highlightedText;
+  const approvalResult = state.approvalResult;
+  
+  // If this is after approval
+  if (approvalResult !== undefined) {
+    // If the changes were approved, apply them
+    if (approvalResult) {
+      const proposedChanges = state.proposedChanges;
+      if (!proposedChanges || !artifact) {
+        throw new Error("Missing required data to apply changes");
+      }
+      // Get the content we need to update
+      const prevContent = artifact.contents?.find?.(
+        (c: any) => c.index === artifact.currentIndex && c.type === "text"
+      ) as ArtifactMarkdownV3 | undefined;
+      
+      if (!prevContent) {
+        throw new Error("Previous content not found");
+      }
+      
+      // Apply changes to create new content
+      const currentText = proposedChanges.currentText;
+      const proposedText = proposedChanges.proposedText;
+      
+      if (!currentText || !proposedText) {
+        throw new Error("Missing text data");
+      }
+      
+      const fullMarkdown = prevContent.fullMarkdown;
+      if (!fullMarkdown.includes(currentText)) {
+        throw new Error("Selected text not found in current content");
+      }
+      const newFullMarkdown = fullMarkdown.replace(currentText, proposedText);
+      const newCurrIndex = artifact.contents ? artifact.contents.length + 1 : 1;
+      
+      // Create updated artifact content
+      const updatedArtifactContent: ArtifactMarkdownV3 = {
+        ...prevContent,
+        index: newCurrIndex,
+        fullMarkdown: newFullMarkdown,
+      };
+      
+      return {
+        artifact: {
+          ...artifact,
+          currentIndex: newCurrIndex,
+          contents: [...(artifact.contents || []), updatedArtifactContent],
         },
-        {
-          temperature: 0,
+        proposedChanges: undefined,
+        approvalResult: undefined
+      };
+    }
+    
+    // If changes were rejected, clear state and return
+    return {
+      proposedChanges: undefined,
+      approvalResult: undefined
+    };
+  }
+  
+  // Only proceed if we have required data
+  if (!highlightedText || !artifact) {
+    throw new Error("Highlighted text or artifact not provided");
+  }
+  
+  // Extract data from TextHighlight
+  const selectedText = highlightedText.selectedText;
+  const markdownBlock = highlightedText.markdownBlock;
+  
+  if (!selectedText || !markdownBlock) {
+    throw new Error("Invalid highlight data");
+  }
+  
+  try {
+    // Set up the model
+    const modelConfig = getModelConfig(config);
+    const model = await getModelFromConfig(modelConfig);
+    const isO1MiniModel = isUsingO1MiniModel(config);
+    
+    // Get context from messages and recent user message
+    const messagesArray = state.messages || [];
+    const recentUserMessage = messagesArray.length > 0 
+      ? messagesArray[messagesArray.length - 1] 
+      : new HumanMessage("Update the text");
+    
+    // Format the prompt
+    const formattedPrompt = PROMPT
+      .replace("{highlightedText}", selectedText)
+      .replace("{textBlocks}", markdownBlock)
+      .replace("{info}", "")
+      .replace("{request}", typeof recentUserMessage.content === 'string' 
+        ? recentUserMessage.content 
+        : "Update the text");
+    
+    // Process with the model
+    const contextMessages = await createContextDocumentMessages(config);
+    const response = await model.invoke([
+      {
+        role: isO1MiniModel ? "user" : "system",
+        content: formattedPrompt,
+      },
+      ...contextMessages,
+      recentUserMessage,
+    ]);
+    
+    const responseContent = typeof response.content === 'string' 
+      ? response.content 
+      : "";
+    
+    // Interrupt with proposed changes
+    throw new NodeInterrupt("Please review changes", {
+      proposedChanges: {
+        currentText: markdownBlock,
+        proposedText: responseContent,
+        metadata: {
+          operation: "updateHighlightedText",
+          selectedText,
+          markdownBlock,
         }
-      )
-    ).withConfig({ runName: "update_highlighted_markdown" });
+      }
+    });
+  } catch (error) {
+    if (error instanceof NodeInterrupt) {
+      throw error;
+    }
+    // Handle other errors
+    console.error("Error in updateHighlightedText:", error);
+    throw new Error(`Failed to update text: ${error instanceof Error ? error.message : String(error)}`);
   }
-
-  const currentArtifactContent = state.artifact
-    ? getArtifactContent(state.artifact)
-    : undefined;
-  if (!currentArtifactContent) {
-    throw new Error("No artifact found");
-  }
-  if (!isArtifactMarkdownContent(currentArtifactContent)) {
-    throw new Error("Artifact is not markdown content");
-  }
-
-  if (!state.highlightedText) {
-    throw new Error(
-      "Can not partially regenerate an artifact without a highlight"
-    );
-  }
-
-  const { markdownBlock, selectedText, fullMarkdown } = state.highlightedText;
-  const formattedPrompt = PROMPT.replace(
-    "{highlightedText}",
-    selectedText
-  ).replace("{textBlocks}", markdownBlock);
-
-  const recentUserMessage = state._messages[state._messages.length - 1];
-  if (recentUserMessage.getType() !== "human") {
-    throw new Error("Expected a human message");
-  }
-
-  const contextDocumentMessages = await createContextDocumentMessages(config);
-  const isO1MiniModel = isUsingO1MiniModel(config);
-  const response = await model.invoke([
-    {
-      role: isO1MiniModel ? "user" : "system",
-      content: formattedPrompt,
-    },
-    ...contextDocumentMessages,
-    recentUserMessage,
-  ]);
-  const responseContent = response.content as string;
-
-  const newCurrIndex = state.artifact.contents.length + 1;
-  const prevContent = state.artifact.contents.find(
-    (c) => c.index === state.artifact.currentIndex && c.type === "text"
-  ) as ArtifactMarkdownV3 | undefined;
-  if (!prevContent) {
-    throw new Error("Previous content not found");
-  }
-
-  if (!fullMarkdown.includes(markdownBlock)) {
-    throw new Error("Selected text not found in current content");
-  }
-  const newFullMarkdown = fullMarkdown.replace(markdownBlock, responseContent);
-
-  const updatedArtifactContent: ArtifactMarkdownV3 = {
-    ...prevContent,
-    index: newCurrIndex,
-    fullMarkdown: newFullMarkdown,
-  };
-
-  return {
-    artifact: {
-      ...state.artifact,
-      currentIndex: newCurrIndex,
-      contents: [...state.artifact.contents, updatedArtifactContent],
-    },
-  };
 };
