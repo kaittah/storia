@@ -1,5 +1,4 @@
 import { DocumentInterface } from "@langchain/core/documents";
-
 export interface ModelConfigurationParams {
   name: string;
   label: string;
@@ -55,78 +54,29 @@ export interface ArtifactToolResponse {
   language?: string;
   type?: string;
 }
-
-export type RewriteArtifactMetaToolResponse =
-  | {
+export type RewriteArtifactMetaToolResponse = {
       type: "text";
       title?: string;
-      language: ProgrammingLanguageOptions;
-    }
-  | {
-      type: "code";
-      title: string;
-      language: ProgrammingLanguageOptions;
-    };
-
-export type LanguageOptions =
-  | "english"
-  | "mandarin"
-  | "spanish"
-  | "french"
-  | "hindi";
-
-export type ProgrammingLanguageOptions =
-  | "typescript"
-  | "javascript"
-  | "cpp"
-  | "java"
-  | "php"
-  | "python"
-  | "html"
-  | "sql"
-  | "json"
-  | "rust"
-  | "xml"
-  | "clojure"
-  | "csharp"
-  | "other";
-
-export type ReadingLevelOptions =
-  | "pirate"
-  | "child"
-  | "teenager"
-  | "college"
-  | "phd";
-
-export interface CodeHighlight {
-  startCharIndex: number;
-  endCharIndex: number;
 }
 
-export interface ArtifactMarkdownV3 {
+export interface ArtifactMarkdownContent {
+
+
   index: number;
   type: "text";
   title: string;
   fullMarkdown: string;
 }
-
-export interface ArtifactCodeV3 {
-  index: number;
-  type: "code";
-  title: string;
-  language: ProgrammingLanguageOptions;
-  code: string;
-}
-
-export interface ArtifactV3 {
+export interface ArtifactMarkdown {
   currentIndex: number;
-  contents: (ArtifactMarkdownV3 | ArtifactCodeV3)[];
+    contents: ArtifactMarkdownContent[];
 }
-
 export interface TextHighlight {
   fullMarkdown: string;
   markdownBlock: string;
   selectedText: string;
+  startCharIndex: number;
+  endCharIndex: number;
 }
 
 export interface CustomQuickAction {
@@ -191,12 +141,8 @@ export type SearchResult = DocumentInterface<ExaMetadata>;
 
 export interface GraphInput {
   messages?: Record<string, any>[];
-
-  highlightedCode?: CodeHighlight;
   highlightedText?: TextHighlight;
-
-  artifact?: ArtifactV3;
-
+  artifact?: ArtifactMarkdown;
   next?: string;
 
   language?: LanguageOptions;
@@ -206,10 +152,24 @@ export interface GraphInput {
 
   addComments?: boolean;
   addLogs?: boolean;
-  portLanguage?: ProgrammingLanguageOptions;
   fixBugs?: boolean;
   customQuickActionId?: string;
-
   webSearchEnabled?: boolean;
   webSearchResults?: SearchResult[];
 }
+
+
+export type LanguageOptions =
+  | "english"
+  | "mandarin"
+  | "spanish"
+  | "french"
+  | "hindi";
+
+
+export type ReadingLevelOptions =
+| "pirate"
+| "child"
+| "teenager"
+| "college"
+| "phd";

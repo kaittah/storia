@@ -1,5 +1,5 @@
 import { Annotation, MessagesAnnotation } from "@langchain/langgraph";
-import { ArtifactV3 } from "@storia/shared/types";
+import { ArtifactMarkdown } from "@storia/shared/types";
 
 export const TitleGenerationAnnotation = Annotation.Root({
   /**
@@ -9,7 +9,7 @@ export const TitleGenerationAnnotation = Annotation.Root({
   /**
    * The artifact that was generated/updated (if any)
    */
-  artifact: Annotation<ArtifactV3 | undefined>,
+  artifact: Annotation<ArtifactMarkdown | undefined>,
 });
 
 export type TitleGenerationReturnType = Partial<

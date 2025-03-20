@@ -1,11 +1,8 @@
 import { cleanContent } from "@/lib/normalize_string";
 import {
-  Artifact,
-  ArtifactCodeV3,
-  ArtifactMarkdownV3,
+  ArtifactMarkdownContent,
   ArtifactToolResponse,
-  ArtifactV3,
-  ProgrammingLanguageOptions,
+  ArtifactMarkdown,
   RewriteArtifactMetaToolResponse,
 } from "@storia/shared/types";
 import {
@@ -72,7 +69,7 @@ export const replaceOrInsertMessageChunk = (
 
 export const createNewGeneratedArtifactFromTool = (
   artifactTool: ArtifactToolResponse
-): ArtifactMarkdownV3 | ArtifactCodeV3 | undefined => {
+): ArtifactMarkdownContent| undefined => {
   if (!artifactTool.type) {
     console.error("Received new artifact without type");
     return;
@@ -83,17 +80,6 @@ export const createNewGeneratedArtifactFromTool = (
       type: "text",
       title: artifactTool.title || "",
       fullMarkdown: artifactTool.artifact || "",
-    };
-  } else {
-    if (!artifactTool.language) {
-      console.error("Received new code artifact without language");
-    }
-    return {
-      index: 1,
-      type: "code",
-      title: artifactTool.title || "",
-      code: artifactTool.artifact || "",
-      language: artifactTool.language as ProgrammingLanguageOptions,
     };
   }
 };
@@ -121,12 +107,12 @@ const validateNewArtifactIndex = (
 };
 
 export const updateHighlightedMarkdown = (
-  prevArtifact: ArtifactV3,
+  prevArtifact: ArtifactMarkdown,
   content: string,
   newArtifactIndex: number,
-  prevCurrentContent: ArtifactMarkdownV3,
+  prevCurrentContent: ArtifactMarkdownContent,
   isFirstUpdate: boolean
-): ArtifactV3 | undefined => {
+): ArtifactMarkdown | undefined => {
   // Create a deep copy of the previous artifact
   const basePrevArtifact = {
     ...prevArtifact,
@@ -139,10 +125,10 @@ export const updateHighlightedMarkdown = (
     isFirstUpdate
   );
 
-  let newContents: (ArtifactCodeV3 | ArtifactMarkdownV3)[];
+  let newContents: (ArtifactMarkdownContent)[];
 
   if (isFirstUpdate) {
-    const newMarkdownContent: ArtifactMarkdownV3 = {
+    const newMarkdownContent: ArtifactMarkdownContent = {
       ...prevCurrentContent,
       index: currentIndex,
       fullMarkdown: content,
@@ -161,7 +147,7 @@ export const updateHighlightedMarkdown = (
   }
 
   // Create new reference for the entire artifact
-  const newArtifact: ArtifactV3 = {
+  const newArtifact: ArtifactMarkdown = {
     ...basePrevArtifact,
     currentIndex,
     contents: newContents,
@@ -175,65 +161,11 @@ export const updateHighlightedMarkdown = (
   return newArtifact;
 };
 
-export const updateHighlightedCode = (
-  prevArtifact: ArtifactV3,
-  content: string,
-  newArtifactIndex: number,
-  prevCurrentContent: ArtifactCodeV3,
-  isFirstUpdate: boolean
-): ArtifactV3 | undefined => {
-  // Create a deep copy of the previous artifact
-  const basePrevArtifact = {
-    ...prevArtifact,
-    contents: prevArtifact.contents.map((c) => ({ ...c })),
-  };
-
-  const currentIndex = validateNewArtifactIndex(
-    newArtifactIndex,
-    basePrevArtifact.contents.length,
-    isFirstUpdate
-  );
-
-  let newContents: (ArtifactCodeV3 | ArtifactMarkdownV3)[];
-
-  if (isFirstUpdate) {
-    const newCodeContent: ArtifactCodeV3 = {
-      ...prevCurrentContent,
-      index: currentIndex,
-      code: content,
-    };
-    newContents = [...basePrevArtifact.contents, newCodeContent];
-  } else {
-    newContents = basePrevArtifact.contents.map((c) => {
-      if (c.index === currentIndex) {
-        return {
-          ...c,
-          code: content,
-        };
-      }
-      return { ...c }; // Create new reference for unchanged items too
-    });
-  }
-
-  const newArtifact: ArtifactV3 = {
-    ...basePrevArtifact,
-    currentIndex,
-    contents: newContents,
-  };
-
-  // Verify we're actually creating a new reference
-  if (Object.is(newArtifact, prevArtifact)) {
-    console.warn("Warning: updateHighlightedCode returned same reference");
-  }
-
-  return newArtifact;
-};
-
 interface UpdateRewrittenArtifactArgs {
-  prevArtifact: ArtifactV3;
+  prevArtifact: ArtifactMarkdown;
   newArtifactContent: string;
   rewriteArtifactMeta: RewriteArtifactMetaToolResponse;
-  prevCurrentContent?: ArtifactMarkdownV3 | ArtifactCodeV3;
+  prevCurrentContent?: ArtifactMarkdownContent;
   newArtifactIndex: number;
   isFirstUpdate: boolean;
   artifactLanguage: string;
@@ -246,8 +178,7 @@ export const updateRewrittenArtifact = ({
   prevCurrentContent,
   newArtifactIndex,
   isFirstUpdate,
-  artifactLanguage,
-}: UpdateRewrittenArtifactArgs): ArtifactV3 => {
+}: UpdateRewrittenArtifactArgs): ArtifactMarkdown => {
   // Create a deep copy of the previous artifact
   const basePrevArtifact = {
     ...prevArtifact,
@@ -260,22 +191,10 @@ export const updateRewrittenArtifact = ({
     isFirstUpdate
   );
 
-  let artifactContents: (ArtifactMarkdownV3 | ArtifactCodeV3)[];
+  let artifactContents: (ArtifactMarkdownContent)[];
 
   if (isFirstUpdate) {
-    if (rewriteArtifactMeta.type === "code") {
-      artifactContents = [
-        ...basePrevArtifact.contents,
-        {
-          type: "code",
-          title: rewriteArtifactMeta.title || prevCurrentContent?.title || "",
-          index: currentIndex,
-          language: artifactLanguage as ProgrammingLanguageOptions,
-          code: newArtifactContent,
-        },
-      ];
-    } else {
-      artifactContents = [
+    artifactContents = [
         ...basePrevArtifact.contents,
         {
           index: currentIndex,
@@ -284,32 +203,19 @@ export const updateRewrittenArtifact = ({
           fullMarkdown: newArtifactContent,
         },
       ];
-    }
   } else {
-    if (rewriteArtifactMeta?.type === "code") {
-      artifactContents = basePrevArtifact.contents.map((c) => {
-        if (c.index === currentIndex) {
-          return {
-            ...c,
-            code: newArtifactContent,
-          };
-        }
-        return { ...c }; // Create new reference for unchanged items too
-      });
-    } else {
-      artifactContents = basePrevArtifact.contents.map((c) => {
-        if (c.index === currentIndex) {
-          return {
-            ...c,
-            fullMarkdown: newArtifactContent,
-          };
-        }
-        return { ...c }; // Create new reference for unchanged items too
-      });
-    }
+    artifactContents = basePrevArtifact.contents.map((c) => {
+      if (c.index === currentIndex) {
+        return {
+          ...c,
+          fullMarkdown: newArtifactContent,
+        };
+      }
+      return { ...c }; // Create new reference for unchanged items too
+    });
   }
 
-  const newArtifact: ArtifactV3 = {
+  const newArtifact: ArtifactMarkdown = {
     ...basePrevArtifact,
     currentIndex,
     contents: artifactContents,
@@ -321,39 +227,6 @@ export const updateRewrittenArtifact = ({
   }
 
   return newArtifact;
-};
-
-export const convertToArtifactV3 = (oldArtifact: Artifact): ArtifactV3 => {
-  let currentIndex = oldArtifact.currentContentIndex;
-  if (currentIndex > oldArtifact.contents.length) {
-    // If the value to be set in `currentIndex` is greater than the total number of contents,
-    // set it to the last index so that the user can see the latest content.
-    currentIndex = oldArtifact.contents.length;
-  }
-
-  const v3: ArtifactV3 = {
-    currentIndex,
-    contents: oldArtifact.contents.map((content) => {
-      if (content.type === "code") {
-        return {
-          index: content.index,
-          type: "code",
-          title: content.title,
-          language: content.language as ProgrammingLanguageOptions,
-          code: content.content,
-        };
-      } else {
-        return {
-          index: content.index,
-          type: "text",
-          title: content.title,
-          fullMarkdown: content.content,
-          blocks: undefined,
-        };
-      }
-    }),
-  };
-  return v3;
 };
 
 export function handleGenerateArtifactToolCallChunk(toolCallChunkArgs: string) {
@@ -376,8 +249,7 @@ export function handleGenerateArtifactToolCallChunk(toolCallChunkArgs: string) {
 
   if (
     newArtifactText.artifact &&
-    (newArtifactText.type === "text" ||
-      (newArtifactText.type === "code" && newArtifactText.language))
+    (newArtifactText.type === "text")
   ) {
     const content = createNewGeneratedArtifactFromTool(newArtifactText);
     if (!content) {

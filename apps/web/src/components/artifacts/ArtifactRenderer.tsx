@@ -1,16 +1,13 @@
 import { convertToOpenAIFormat } from "@/lib/convert_messages";
 import { cn } from "@/lib/utils";
 import {
-  ArtifactCodeV3,
-  ArtifactMarkdownV3,
-  ProgrammingLanguageOptions,
+  ArtifactMarkdownContent,
 } from "@storia/shared/types";
 import { EditorView } from "@codemirror/view";
 import { HumanMessage } from "@langchain/core/messages";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { ActionsToolbar, CodeToolBar } from "./actions_toolbar";
-import { CodeRenderer } from "./CodeRenderer";
+import { ActionsToolbar} from "./actions_toolbar";
 import { TextRenderer } from "./TextRenderer";
 import { CustomQuickActions } from "./actions_toolbar/custom";
 import { getArtifactContent } from "@storia/shared/utils/artifacts";
@@ -153,7 +150,10 @@ function ArtifactRendererComponent(props: ArtifactRendererProps) {
     await streamMessage({
       messages: [convertToOpenAIFormat(humanMessage)],
       ...(selectionIndexes && {
-        highlightedCode: {
+        highlightedText: {
+          fullMarkdown: content,
+          markdownBlock: content,
+          selectedText: content,
           startCharIndex: selectionIndexes.start,
           endCharIndex: selectionIndexes.end,
         },
@@ -193,8 +193,7 @@ function ArtifactRendererComponent(props: ArtifactRendererProps) {
               let startIndex = 0;
               let endIndex = 0;
               let currentArtifactContent:
-                | ArtifactCodeV3
-                | ArtifactMarkdownV3
+                | ArtifactMarkdownContent
                 | undefined = undefined;
               try {
                 currentArtifactContent = artifact
@@ -208,21 +207,19 @@ function ArtifactRendererComponent(props: ArtifactRendererProps) {
                 // no-op
               }
 
-              if (currentArtifactContent?.type === "code") {
-                if (editorRef.current) {
-                  const from = editorRef.current.posAtDOM(
-                    range.startContainer,
-                    range.startOffset
-                  );
-                  const to = editorRef.current.posAtDOM(
-                    range.endContainer,
-                    range.endOffset
-                  );
-                  startIndex = from;
-                  endIndex = to;
-                }
-                setSelectionIndexes({ start: startIndex, end: endIndex });
+              if (editorRef.current) {
+                const from = editorRef.current.posAtDOM(
+                  range.startContainer,
+                  range.startOffset
+                );
+                const to = editorRef.current.posAtDOM(
+                  range.endContainer,
+                  range.endOffset
+                );
+                startIndex = from;
+                endIndex = to;
               }
+              setSelectionIndexes({ start: startIndex, end: endIndex });
 
               for (let i = 0; i < rects.length; i++) {
                 const rect = rects[i];
@@ -323,13 +320,13 @@ function ArtifactRendererComponent(props: ArtifactRendererProps) {
         ref={contentRef}
         className={cn(
           "flex justify-center h-full",
-          currentArtifactContent.type === "code" ? "pt-[10px]" : ""
+          ""
         )}
       >
         <div
           className={cn(
             "relative min-h-full",
-            currentArtifactContent.type === "code" ? "min-w-full" : "min-w-full"
+            "min-w-full"
           )}
         >
           <div
@@ -342,12 +339,6 @@ function ArtifactRendererComponent(props: ArtifactRendererProps) {
               <TextRenderer
                 isInputVisible={isInputVisible}
                 isEditing={props.isEditing}
-                isHovering={isHoveringOverArtifact}
-              />
-            ) : null}
-            {currentArtifactContent.type === "code" ? (
-              <CodeRenderer
-                editorRef={editorRef}
                 isHovering={isHoveringOverArtifact}
               />
             ) : null}
@@ -383,15 +374,6 @@ function ArtifactRendererComponent(props: ArtifactRendererProps) {
         <ActionsToolbar
           streamMessage={streamMessage}
           isTextSelected={isSelectionActive || selectedBlocks !== undefined}
-        />
-      ) : null}
-      {currentArtifactContent.type === "code" ? (
-        <CodeToolBar
-          streamMessage={streamMessage}
-          isTextSelected={isSelectionActive || selectedBlocks !== undefined}
-          language={
-            currentArtifactContent.language as ProgrammingLanguageOptions
-          }
         />
       ) : null}
     </div>

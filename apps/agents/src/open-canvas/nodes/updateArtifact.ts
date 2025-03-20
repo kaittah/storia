@@ -1,11 +1,10 @@
 import { LangGraphRunnableConfig } from "@langchain/langgraph";
 import {
   getArtifactContent,
-  isArtifactCodeContent,
 } from "@storia/shared/utils/artifacts";
 import {
-  ArtifactCodeV3,
-  ArtifactV3,
+  ArtifactMarkdown,
+  ArtifactMarkdownContent,
 } from "@storia/shared/types";
 import {
   createContextDocumentMessages,
@@ -26,6 +25,7 @@ export const updateArtifact = async (
   state: typeof OpenCanvasGraphAnnotation.State,
   config: LangGraphRunnableConfig
 ): Promise<OpenCanvasGraphReturnType> => {
+  // why does it seem like this is only for code artifacts?
   const { modelProvider, modelName } = getModelConfig(config);
   let smallModel: Awaited<ReturnType<typeof getModelFromConfig>>;
   if (modelProvider.includes("openai") || modelName.includes("3-5-sonnet")) {
@@ -58,33 +58,30 @@ export const updateArtifact = async (
   if (!currentArtifactContent) {
     throw new Error("No artifact found");
   }
-  if (!isArtifactCodeContent(currentArtifactContent)) {
-    throw new Error("Current artifact content is not markdown");
-  }
 
-  if (!state.highlightedCode) {
+  if (!state.highlightedText) {
     throw new Error(
       "Can not partially regenerate an artifact without a highlight"
     );
   }
 
   // Highlighted text is present, so we need to update the highlighted text.
-  const start = Math.max(0, state.highlightedCode.startCharIndex - 500);
+  const start = Math.max(0, state.highlightedText?.startCharIndex || 0 - 500);
   const end = Math.min(
-    currentArtifactContent.code.length,
-    state.highlightedCode.endCharIndex + 500
+    currentArtifactContent.fullMarkdown.length,
+    (state.highlightedText?.endCharIndex || 0) + 500
   );
 
-  const beforeHighlight = currentArtifactContent.code.slice(
+  const beforeHighlight = currentArtifactContent.fullMarkdown.slice(
     start,
-    state.highlightedCode.startCharIndex
+    state.highlightedText?.startCharIndex
   ) as string;
-  const highlightedText = currentArtifactContent.code.slice(
-    state.highlightedCode.startCharIndex,
-    state.highlightedCode.endCharIndex
+  const highlightedText = currentArtifactContent.fullMarkdown.slice(
+    state.highlightedText?.startCharIndex || 0,
+    state.highlightedText?.endCharIndex || 0
   ) as string;
-  const afterHighlight = currentArtifactContent.code.slice(
-    state.highlightedCode.endCharIndex,
+  const afterHighlight = currentArtifactContent.fullMarkdown.slice(
+    state.highlightedText?.endCharIndex || 0,
     end
   ) as string;
 
@@ -110,22 +107,22 @@ export const updateArtifact = async (
     recentHumanMessage,
   ]);
 
-  const entireTextBefore = currentArtifactContent.code.slice(
+  const entireTextBefore = currentArtifactContent.fullMarkdown.slice(
     0,
-    state.highlightedCode.startCharIndex
+    state.highlightedText?.startCharIndex || 0
   );
-  const entireTextAfter = currentArtifactContent.code.slice(
-    state.highlightedCode.endCharIndex
+  const entireTextAfter = currentArtifactContent.fullMarkdown.slice(
+    state.highlightedText?.endCharIndex || 0
   );
   const entireUpdatedContent = `${entireTextBefore}${updatedArtifact.content}${entireTextAfter}`;
 
-  const newArtifactContent: ArtifactCodeV3 = {
+  const newArtifactContent: ArtifactMarkdownContent = {
     ...currentArtifactContent,
     index: state.artifact.contents.length + 1,
-    code: entireUpdatedContent,
+    fullMarkdown: entireUpdatedContent,
   };
 
-  const newArtifact: ArtifactV3 = {
+  const newArtifact: ArtifactMarkdown = {
     ...state.artifact,
     currentIndex: state.artifact.contents.length + 1,
     contents: [...state.artifact.contents, newArtifactContent],

@@ -1,13 +1,11 @@
 import { BaseMessage, BaseMessageLike } from "@langchain/core/messages";
 import {
   ArtifactLengthOptions,
-  LanguageOptions,
-  ProgrammingLanguageOptions,
-  ReadingLevelOptions,
-  CodeHighlight,
-  ArtifactV3,
+  ArtifactMarkdown,
   TextHighlight,
   SearchResult,
+  LanguageOptions,
+  ReadingLevelOptions,
 } from "@storia/shared/types";
 import {
   Annotation,
@@ -71,11 +69,7 @@ export const OpenCanvasGraphAnnotation = Annotation.Root({
     },
     default: () => [],
   }),
-  /**
-   * The part of the artifact the user highlighted. Use the `selectedArtifactId`
-   * to determine which artifact the highlight belongs to.
-   */
-  highlightedCode: Annotation<CodeHighlight | undefined>,
+
   /**
    * The highlighted text. This includes the markdown blocks which the highlighted
    * text belongs to, along with the entire plain text content of highlight.
@@ -84,7 +78,7 @@ export const OpenCanvasGraphAnnotation = Annotation.Root({
   /**
    * The artifacts that have been generated in the conversation.
    */
-  artifact: Annotation<ArtifactV3>,
+  artifact: Annotation<ArtifactMarkdown>,
   /**
    * The next node to route to. Only used for the first routing node/conditional edge.
    */
@@ -113,10 +107,6 @@ export const OpenCanvasGraphAnnotation = Annotation.Root({
    * Whether or not to add logs to the code artifact.
    */
   addLogs: Annotation<boolean | undefined>,
-  /**
-   * The programming language to port the code artifact to.
-   */
-  portLanguage: Annotation<ProgrammingLanguageOptions | undefined>,
   /**
    * Whether or not to fix bugs in the code artifact.
    */

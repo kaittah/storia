@@ -1,5 +1,5 @@
-import { Dispatch, SetStateAction, useEffect, useRef, useState, useCallback } from "react";
-import { ArtifactMarkdownV3 } from "@storia/shared/types";
+import { Dispatch, SetStateAction, useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { ArtifactMarkdown, ArtifactMarkdownContent } from "@storia/shared/types";
 import "@blocknote/core/fonts/inter.css";
 import {
   getDefaultReactSlashMenuItems,
@@ -110,6 +110,8 @@ export function TextRendererComponent(props: TextRendererProps) {
           fullMarkdown: cleanText(fullMarkdown),
           markdownBlock: cleanText(markdownBlock),
           selectedText: cleanText(selectedText),
+          startCharIndex: 0,
+          endCharIndex: 0,
         });
       })();
     }
@@ -137,7 +139,7 @@ export function TextRendererComponent(props: TextRendererProps) {
       const currentIndex = artifact.currentIndex;
       const currentContent = artifact.contents.find(
         (c) => c.index === currentIndex && c.type === "text"
-      ) as ArtifactMarkdownV3 | undefined;
+      ) as ArtifactMarkdownContent | undefined;
       if (!currentContent) return;
 
       // Blocks are not found in the artifact, so once streaming is done we should update the artifact state with the blocks
@@ -169,10 +171,11 @@ export function TextRendererComponent(props: TextRendererProps) {
         })();
       } catch (_) {
         setManuallyUpdatingArtifact(false);
+        }
       }
-    }
-  }, [isRawView, editor]);
-
+    });
+    
+  
   const isComposition = useRef(false);
 
   const onChange = async () => {
@@ -202,13 +205,13 @@ export function TextRendererComponent(props: TextRendererProps) {
           ...prev,
           contents: prev.contents.map((c) => {
             if (c.index === prev.currentIndex) {
-              return {
-                ...c,
+          return {
+            ...c,
                 fullMarkdown: fullMarkdown,
-              };
-            }
-            return c;
-          }),
+          };
+        }
+        return c;
+      }),
         };
       }
     });
@@ -231,17 +234,17 @@ export function TextRendererComponent(props: TextRendererProps) {
           ],
         };
       } else {
-        return {
-          ...prev,
-          contents: prev.contents.map((c) => {
+            return {
+              ...prev,
+              contents: prev.contents.map((c) => {
             if (c.index === prev.currentIndex) {
               return {
-                ...c,
+                    ...c,
                 fullMarkdown: newRawMarkdown,
-              };
-            }
-            return c;
-          }),
+                  };
+                }
+                return c;
+              }),
         };
       }
     });
