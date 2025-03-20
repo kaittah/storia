@@ -17,7 +17,6 @@ import {
   isUsingO1MiniModel,
   optionallyGetSystemPromptFromConfig,
 } from "../../../utils.js";
-import { isArtifactMarkdownContent } from "@storia/shared/utils/artifacts";
 import { AIMessage } from "@langchain/core/messages";
 import {
   extractThinkingAndResponseTokens,
@@ -41,9 +40,7 @@ export const rewriteArtifact = async (
   const artifactType = artifactMetaToolCall.type;
   const isNewType = artifactType !== currentArtifactContent.type;
 
-  const artifactContent = isArtifactMarkdownContent(currentArtifactContent)
-    ? currentArtifactContent.fullMarkdown
-    : currentArtifactContent.code;
+  const artifactContent = currentArtifactContent.fullMarkdown;
 
   const formattedPrompt = buildPrompt({
     artifactContent,

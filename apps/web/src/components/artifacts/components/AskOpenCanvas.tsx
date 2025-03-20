@@ -3,9 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CircleArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ArtifactV3 } from "@storia/shared/types";
+import { ArtifactMarkdown } from "@storia/shared/types";
 import { getArtifactContent } from "@storia/shared/utils/artifacts";
-import { isArtifactCodeContent } from "@storia/shared/utils/artifacts";
 import { useToast } from "@/hooks/use-toast";
 
 interface AskOpenCanvasProps {
@@ -14,7 +13,7 @@ interface AskOpenCanvasProps {
   setIsInputVisible: (visible: boolean) => void;
   handleSubmitMessage: (inputValue: string) => Promise<void>;
   handleSelectionBoxMouseDown: (e: React.MouseEvent) => void;
-  artifact: ArtifactV3;
+  artifact: ArtifactMarkdown;
   selectionIndexes: { start: number; end: number } | undefined;
   handleCleanupState: () => void;
   inputValue: string;
@@ -47,20 +46,6 @@ export const AskOpenCanvas = forwardRef<HTMLDivElement, AskOpenCanvasProps>(
       const artifactContent = props.artifact
         ? getArtifactContent(props.artifact)
         : undefined;
-      if (
-        !selectionIndexes &&
-        artifactContent &&
-        isArtifactCodeContent(artifactContent)
-      ) {
-        toast({
-          title: "Selection error",
-          description:
-            "Failed to get start/end indexes of the selected text. Please try again.",
-          duration: 5000,
-        });
-        handleCleanupState();
-        return;
-      }
 
       if (selectionBox && props.artifact) {
         await handleSubmitMessage(inputValue);

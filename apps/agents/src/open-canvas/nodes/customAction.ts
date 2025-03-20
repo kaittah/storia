@@ -2,13 +2,11 @@ import { BaseMessage } from "@langchain/core/messages";
 import { LangGraphRunnableConfig } from "@langchain/langgraph";
 import {
   getArtifactContent,
-  isArtifactMarkdownContent,
 } from "@storia/shared/utils/artifacts";
 import {
-  ArtifactCodeV3,
-  ArtifactMarkdownV3,
-  ArtifactV3,
+  ArtifactMarkdownContent,
   CustomQuickAction,
+  ArtifactMarkdown,
 } from "@storia/shared/types";
 import {
   ensureStoreInConfig,
@@ -90,9 +88,7 @@ export const customAction = async (
     formattedPrompt += `\n\n${formattedConversationHistory}`;
   }
 
-  const artifactContent = isArtifactMarkdownContent(currentArtifactContent)
-    ? currentArtifactContent.fullMarkdown
-    : currentArtifactContent?.code;
+  const artifactContent = currentArtifactContent?.fullMarkdown || "No artifacts generated yet.";
   formattedPrompt += `\n\n${CUSTOM_QUICK_ACTION_ARTIFACT_CONTENT_PROMPT.replace("{artifactContent}", artifactContent || "No artifacts generated yet.")}`;
 
   const newArtifactValues = await smallModel.invoke([
@@ -104,15 +100,13 @@ export const customAction = async (
     return {};
   }
 
-  const newArtifactContent: ArtifactCodeV3 | ArtifactMarkdownV3 = {
+  const newArtifactContent: ArtifactMarkdownContent = {
     ...currentArtifactContent,
     index: state.artifact.contents.length + 1,
-    ...(isArtifactMarkdownContent(currentArtifactContent)
-      ? { fullMarkdown: newArtifactValues.content as string }
-      : { code: newArtifactValues.content as string }),
+    fullMarkdown: newArtifactValues.content as string
   };
 
-  const newArtifact: ArtifactV3 = {
+  const newArtifact: ArtifactMarkdown = {
     ...state.artifact,
     currentIndex: state.artifact.contents.length + 1,
     contents: [...state.artifact.contents, newArtifactContent],

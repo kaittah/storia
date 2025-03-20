@@ -1,6 +1,5 @@
 import { useGraphContext } from "@/contexts/GraphContext";
 import { useToast } from "@/hooks/use-toast";
-import { ProgrammingLanguageOptions } from "@storia/shared/types";
 import { ThreadPrimitive } from "@assistant-ui/react";
 import { Thread as ThreadType } from "@langchain/langgraph-sdk";
 import { ArrowDownIcon, PanelRightOpen, SquarePen } from "lucide-react";
@@ -35,8 +34,7 @@ export interface ThreadProps {
   userId: string | undefined;
   hasChatStarted: boolean;
   handleQuickStart: (
-    type: "text" | "code",
-    language?: ProgrammingLanguageOptions
+    type: "text" | "outline",
   ) => void;
   setChatStarted: Dispatch<SetStateAction<boolean>>;
   switchSelectedThreadCallback: (thread: ThreadType) => void;

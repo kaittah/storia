@@ -34,9 +34,9 @@ export const generateFollowup = async (
     : undefined;
 
   const artifactContent = currentArtifactContent
-    ? isArtifactMarkdownContent(currentArtifactContent)
-      ? currentArtifactContent.fullMarkdown
-      : currentArtifactContent.code
+    ? (isArtifactMarkdownContent(currentArtifactContent)
+        ? currentArtifactContent.fullMarkdown
+        : undefined)
     : undefined;
 
   const formattedPrompt = FOLLOWUP_ARTIFACT_PROMPT.replace(

@@ -1,10 +1,8 @@
-import { ProgrammingLanguageOptions } from "@storia/shared/types";
 import { ThreadPrimitive, useThreadRuntime } from "@assistant-ui/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FC, useMemo } from "react";
 import { TighterText } from "../ui/header";
 import { BookOpen } from "lucide-react";
-import { ProgrammingLanguagesDropdown } from "../ui/programming-lang-dropdown";
 import { Button } from "../ui/button";
 
 const QUICK_START_PROMPTS_SEARCH = [
@@ -43,8 +41,7 @@ function getRandomPrompts(prompts: string[], count: number = 4): string[] {
 
 interface QuickStartButtonsProps {
   handleQuickStart: (
-    type: "text" | "code",
-    language?: ProgrammingLanguageOptions
+    type: "text" | "outline",
   ) => void;
   composer: React.ReactNode;
   searchEnabled: boolean;
@@ -93,16 +90,12 @@ const QuickStartPrompts = ({ searchEnabled }: QuickStartPromptsProps) => {
 };
 
 const QuickStartButtons = (props: QuickStartButtonsProps) => {
-  const handleLanguageSubmit = (language: ProgrammingLanguageOptions) => {
-    props.handleQuickStart("text", language);
-  };
 
   return (
     <div className="flex flex-col gap-8 items-center justify-center w-full">
       <div className="flex flex-col gap-6">
         <p className="text-gray-600 text-sm">Start with a blank canvas</p>
         <div className="flex flex-row gap-1 items-center justify-center w-full">
-          <ProgrammingLanguagesDropdown handleSubmit={handleLanguageSubmit} />
           <Button
             variant="outline"
             className="text-gray-500 hover:text-gray-700 transition-colors ease-in rounded-2xl flex items-center justify-center gap-2 w-[250px] h-[64px]"
@@ -125,8 +118,7 @@ const QuickStartButtons = (props: QuickStartButtonsProps) => {
 
 interface ThreadWelcomeProps {
   handleQuickStart: (
-    type: "text" | "code",
-    language?: ProgrammingLanguageOptions
+    type: "text" | "outline",
   ) => void;
   composer: React.ReactNode;
   searchEnabled: boolean;

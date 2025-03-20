@@ -1,4 +1,3 @@
-import { PROGRAMMING_LANGUAGES } from "@storia/shared/constants";
 import { z } from "zod";
 
 export const OPTIONALLY_UPDATE_ARTIFACT_META_SCHEMA = z
@@ -14,10 +13,7 @@ export const OPTIONALLY_UPDATE_ARTIFACT_META_SCHEMA = z
       ),
     language: z
       .enum(
-        PROGRAMMING_LANGUAGES.map((lang) => lang.language) as [
-          string,
-          ...string[],
-        ]
+        ["other"]
       )
       .describe(
         "The language of the code artifact. This should be populated with the programming language if the user is requesting code to be written, or 'other', in all other cases."

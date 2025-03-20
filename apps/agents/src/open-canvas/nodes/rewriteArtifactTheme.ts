@@ -8,7 +8,7 @@ import {
   isArtifactMarkdownContent,
   getArtifactContent,
 } from "@storia/shared/utils/artifacts";
-import { ArtifactV3} from "@storia/shared/types";
+import { ArtifactMarkdown} from "@storia/shared/types";
 import {
   getModelConfig,
   getModelFromConfig,
@@ -125,7 +125,7 @@ export const rewriteArtifactTheme = async (
     artifactContentText = response;
   }
 
-  const newArtifact: ArtifactV3 = {
+  const newArtifact: ArtifactMarkdown = {
     ...state.artifact,
     currentIndex: state.artifact.contents.length + 1,
     contents: [

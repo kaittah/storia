@@ -6,7 +6,6 @@ import {
   convertToOpenAIFormat,
 } from "@/lib/convert_messages";
 import {
-  ProgrammingLanguageOptions,
   ContextDocument,
 } from "@storia/shared/types";
 import {
@@ -39,8 +38,7 @@ export interface ContentComposerChatInterfaceProps {
   setChatStarted: React.Dispatch<React.SetStateAction<boolean>>;
   hasChatStarted: boolean;
   handleQuickStart: (
-    type: "text" | "code",
-    language?: ProgrammingLanguageOptions
+    type: "text" | "outline",
   ) => void;
   chatCollapsed: boolean;
   setChatCollapsed: (c: boolean) => void;

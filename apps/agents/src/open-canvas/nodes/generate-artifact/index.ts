@@ -5,7 +5,7 @@ import {
   isUsingO1MiniModel,
   optionallyGetSystemPromptFromConfig,
 } from "../../../utils.js";
-import { ArtifactV3 } from "@storia/shared/types";
+import { ArtifactMarkdown } from "@storia/shared/types";
 import { LangGraphRunnableConfig } from "@langchain/langgraph";
 import {
   OpenCanvasGraphAnnotation,
@@ -70,7 +70,7 @@ export const generateArtifact = async (
   }
 
   const newArtifactContent = createArtifactContent(args);
-  const newArtifact: ArtifactV3 = {
+  const newArtifact: ArtifactMarkdown = {
     currentIndex: 1,
     contents: [newArtifactContent],
   };

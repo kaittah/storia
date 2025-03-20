@@ -8,7 +8,6 @@ import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
 import {
   getArtifactContent,
-  isArtifactMarkdownContent,
 } from "@storia/shared/utils/artifacts";
 import { TITLE_SYSTEM_PROMPT, TITLE_USER_PROMPT } from "./prompts.js";
 import {
@@ -45,11 +44,12 @@ export const generateTitle = async (
     ? getArtifactContent(state.artifact)
     : undefined;
 
-  const artifactContent = currentArtifactContent
-    ? isArtifactMarkdownContent(currentArtifactContent)
-      ? currentArtifactContent.fullMarkdown
-      : currentArtifactContent.code
-    : undefined;
+  // const artifactContent = currentArtifactContent
+  //   ? isArtifactMarkdownContent(currentArtifactContent)
+  //     ? currentArtifactContent.fullMarkdown
+  //     : currentArtifactContent.code
+  //   : undefined;
+  const artifactContent = currentArtifactContent?.fullMarkdown || "No artifacts generated yet.";
 
   const artifactContext = artifactContent
     ? `An artifact was generated during this conversation:\n\n${artifactContent}`

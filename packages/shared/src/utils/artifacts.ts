@@ -1,24 +1,22 @@
 import {
-  Artifact,
-  ArtifactCodeV3,
-  ArtifactMarkdownV3,
-  ArtifactV3,
+  ArtifactMarkdownContent,
+  ArtifactMarkdown,
 } from "../types.js";
 
-export const isArtifactCodeContent = (
-  content: unknown
-): content is ArtifactCodeV3 => {
-  return !!(
-    typeof content === "object" &&
-    content &&
-    "type" in content &&
-    content.type === "code"
-  );
-};
+// export const isArtifactCodeContent = (
+//   content: unknown
+// ): content is ArtifactCodeV3 => {
+//   return !!(
+//     typeof content === "object" &&
+//     content &&
+//     "type" in content &&
+//     content.type === "code"
+//   );
+// };
 
 export const isArtifactMarkdownContent = (
   content: unknown
-): content is ArtifactMarkdownV3 => {
+): content is ArtifactMarkdownContent => {
   return !!(
     typeof content === "object" &&
     content &&
@@ -27,20 +25,9 @@ export const isArtifactMarkdownContent = (
   );
 };
 
-export const isDeprecatedArtifactType = (
-  artifact: unknown
-): artifact is Artifact => {
-  return !!(
-    typeof artifact === "object" &&
-    artifact &&
-    "currentContentIndex" in artifact &&
-    typeof artifact.currentContentIndex === "number"
-  );
-};
-
 export const getArtifactContent = (
-  artifact: ArtifactV3
-): ArtifactCodeV3 | ArtifactMarkdownV3 => {
+  artifact: ArtifactMarkdown
+): ArtifactMarkdownContent => {
   if (!artifact) {
     throw new Error("No artifact found.");
   }

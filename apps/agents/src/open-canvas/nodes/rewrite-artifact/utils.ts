@@ -1,11 +1,8 @@
 import {
   getArtifactContent,
-  isArtifactCodeContent,
 } from "@storia/shared/utils/artifacts";
 import {
-  ArtifactCodeV3,
-  ArtifactMarkdownV3,
-  ProgrammingLanguageOptions,
+  ArtifactMarkdownContent,
 } from "@storia/shared/types";
 import {
   OPTIONALLY_UPDATE_META_PROMPT,
@@ -72,43 +69,31 @@ export const buildPrompt = ({
 interface CreateNewArtifactContentArgs {
   artifactType: string;
   state: typeof OpenCanvasGraphAnnotation.State;
-  currentArtifactContent: ArtifactCodeV3 | ArtifactMarkdownV3;
+  currentArtifactContent: ArtifactMarkdownContent;
   artifactMetaToolCall: z.infer<typeof OPTIONALLY_UPDATE_ARTIFACT_META_SCHEMA>;
   newContent: string;
 }
 
-const getLanguage = (
-  artifactMetaToolCall: z.infer<typeof OPTIONALLY_UPDATE_ARTIFACT_META_SCHEMA>,
-  currentArtifactContent: ArtifactCodeV3 | ArtifactMarkdownV3 // Replace 'any' with proper type
-) =>
-  artifactMetaToolCall?.language ||
-  (isArtifactCodeContent(currentArtifactContent)
-    ? currentArtifactContent.language
-    : "other");
+// const getLanguage = (
+//   artifactMetaToolCall: z.infer<typeof OPTIONALLY_UPDATE_ARTIFACT_META_SCHEMA>,
+//   currentArtifactContent: ArtifactMarkdownContent // Replace 'any' with proper type
+// ) =>
+//   artifactMetaToolCall?.language ||
+//   (isArtifactCodeContent(currentArtifactContent)
+//     ? currentArtifactContent.language
+//     : "other");
 
 export const createNewArtifactContent = ({
-  artifactType,
+  // artifactType,
   state,
   currentArtifactContent,
   artifactMetaToolCall,
   newContent,
-}: CreateNewArtifactContentArgs): ArtifactCodeV3 | ArtifactMarkdownV3 => {
+}: CreateNewArtifactContentArgs): ArtifactMarkdownContent => {
   const baseContent = {
     index: state.artifact.contents.length + 1,
     title: artifactMetaToolCall?.title || currentArtifactContent.title,
   };
-
-  if (artifactType === "code") {
-    return {
-      ...baseContent,
-      type: "code",
-      language: getLanguage(
-        artifactMetaToolCall,
-        currentArtifactContent
-      ) as ProgrammingLanguageOptions,
-      code: newContent,
-    };
-  }
 
   return {
     ...baseContent,

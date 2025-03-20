@@ -1,5 +1,3 @@
-import { ProgrammingLanguageOptions } from "@storia/shared/types";
-
 export type Message = {
   id: string;
   text?: string;
@@ -22,12 +20,6 @@ export type UserRules = {
   contentRules: string[];
 };
 
-export interface ArtifactV2 {
-  id: string;
-  contents: (ArtifactMarkdownContent | ArtifactCodeContent)[];
-  currentContentIndex: number;
-}
-
 export interface MarkdownBlock {
   id: string;
   content: Array<{
@@ -44,14 +36,6 @@ export interface ArtifactMarkdownContent {
   blocks: MarkdownBlock[];
   title: string;
   type: "text";
-}
-
-export interface ArtifactCodeContent {
-  index: number;
-  code: string;
-  title: string;
-  type: "code";
-  language: ProgrammingLanguageOptions;
 }
 
 export interface Highlight {

@@ -13,7 +13,7 @@ import {
   getArtifactContent,
   isArtifactMarkdownContent,
 } from "@storia/shared/utils/artifacts";
-import { ArtifactMarkdownV3 } from "@storia/shared/types";
+import { ArtifactMarkdownContent } from "@storia/shared/types";
 import {
   OpenCanvasGraphAnnotation,
   OpenCanvasGraphReturnType,
@@ -117,7 +117,7 @@ export const updateHighlightedText = async (
   const newCurrIndex = state.artifact.contents.length + 1;
   const prevContent = state.artifact.contents.find(
     (c) => c.index === state.artifact.currentIndex && c.type === "text"
-  ) as ArtifactMarkdownV3 | undefined;
+  ) as ArtifactMarkdownContent | undefined;
   if (!prevContent) {
     throw new Error("Previous content not found");
   }
@@ -127,7 +127,7 @@ export const updateHighlightedText = async (
   }
   const newFullMarkdown = fullMarkdown.replace(markdownBlock, responseContent);
 
-  const updatedArtifactContent: ArtifactMarkdownV3 = {
+  const updatedArtifactContent: ArtifactMarkdownContent = {
     ...prevContent,
     index: newCurrIndex,
     fullMarkdown: newFullMarkdown,

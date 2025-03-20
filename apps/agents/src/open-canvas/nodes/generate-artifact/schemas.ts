@@ -1,4 +1,3 @@
-import { PROGRAMMING_LANGUAGES } from "@storia/shared/constants";
 import { z } from "zod";
 
 export const ARTIFACT_TOOL_SCHEMA = z.object({
@@ -7,10 +6,7 @@ export const ARTIFACT_TOOL_SCHEMA = z.object({
     .describe("The content type of the artifact generated."),
   language: z
     .enum(
-      PROGRAMMING_LANGUAGES.map((lang) => lang.language) as [
-        string,
-        ...string[],
-      ]
+      ["other"]
     )
     .optional()
     .describe(
