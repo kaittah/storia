@@ -23,8 +23,6 @@ import { useToast } from "@/hooks/use-toast";
 import { TighterText } from "@/components/ui/header";
 import { GraphInput } from "@storia/shared/types";
 import { User } from "@supabase/supabase-js";
-import { WorkflowPanel } from "@/components/workflow/WorkflowPanel";
-
 
 export interface CustomQuickActionsProps {
   isTextSelected: boolean;
@@ -97,7 +95,12 @@ export function CustomQuickActions(props: CustomQuickActionsProps) {
   const [isEditingId, setIsEditingId] = useState<string>();
   const [customQuickActions, setCustomQuickActions] =
     useState<CustomQuickAction[]>();
-  const [isWorkflowOpen, setIsWorkflowOpen] = useState(false);
+
+  const openEditDialog = (id: string) => {
+    setIsEditing(true);
+    setDialogOpen(true);
+    setIsEditingId(id);
+  };
 
   const getAndSetCustomQuickActions = async (userId: string) => {
     const actions = await getCustomQuickActions(userId);
@@ -109,54 +112,151 @@ export function CustomQuickActions(props: CustomQuickActionsProps) {
     getAndSetCustomQuickActions(user.id);
   }, [assistantId, user]);
 
+  const handleNewActionClick = (e: Event) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsEditing(false);
+    setIsEditingId(undefined);
+    setDialogOpen(true);
+  };
+
+  const handleQuickActionClick = async (id: string): Promise<void> => {
+    setOpen(false);
+    setIsEditing(false);
+    setIsEditingId(undefined);
+    await streamMessage({
+      customQuickActionId: id,
+    });
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!user) {
+      toast({
+        title: "Failed to delete",
+        description: "User not found",
+        variant: "destructive",
+        duration: 5000,
+      });
+      return;
+    }
+    try {
+      const deletionSuccess = await deleteCustomQuickAction(
+        id,
+        customQuickActions || [],
+        user.id
+      );
+      if (deletionSuccess) {
+        toast({
+          title: "Custom quick action deleted successfully",
+        });
+        setCustomQuickActions((actions) => {
+          if (!actions) return actions;
+          return actions.filter((action) => action.id !== id);
+        });
+      } else {
+        toast({
+          title: "Failed to delete custom quick action",
+          variant: "destructive",
+        });
+      }
+    } catch (_) {
+      toast({
+        title: "Failed to delete custom quick action",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <>
-      {isWorkflowOpen && (
-        <div className="fixed bottom-20 right-20 z-50">
-          <WorkflowPanel />
-        </div>
-      )}
-      <DropdownMenu
-        open={open}
-        onOpenChange={(o) => {
-          if (props.isTextSelected) return;
-          setOpen(o);
-        }}
-      >
-        <DropdownMenuTrigger className="fixed bottom-4 right-20" asChild>
-          <TooltipIconButton
-            tooltip={
-              props.isTextSelected
-                ? "Quick actions disabled while text is selected"
-                : "Custom quick actions"
-            }
-            variant="outline"
+    <DropdownMenu
+      open={open}
+      onOpenChange={(o) => {
+        if (props.isTextSelected) return;
+        setOpen(o);
+      }}
+    >
+      <DropdownMenuTrigger className="fixed bottom-4 right-20" asChild>
+        <TooltipIconButton
+          tooltip={
+            props.isTextSelected
+              ? "Quick actions disabled while text is selected"
+              : "Custom quick actions"
+          }
+          variant="outline"
+          className={cn(
+            "transition-colors w-[48px] h-[48px] p-0 rounded-xl",
+            props.isTextSelected
+              ? "cursor-default opacity-50 text-gray-400 hover:bg-background"
+              : "cursor-pointer"
+          )}
+          delayDuration={400}
+        >
+          <WandSparkles
             className={cn(
-              "transition-colors w-[48px] h-[48px] p-0 rounded-xl",
+              "w-[26px] h-[26px]",
               props.isTextSelected
-                ? "cursor-default opacity-50 text-gray-400 hover:bg-background"
-                : "cursor-pointer"
+                ? "text-gray-400"
+                : "hover:text-gray-900 transition-colors"
             )}
-            delayDuration={400}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setIsWorkflowOpen(!isWorkflowOpen);
-              return false; // Prevent dropdown from opening
-            }}
-          >
-            <WandSparkles
-              className={cn(
-                "w-[26px] h-[26px]",
-                props.isTextSelected
-                  ? "text-gray-400"
-                  : "hover:text-gray-900 transition-colors"
-              )}
-            />
-          </TooltipIconButton>
-        </DropdownMenuTrigger>
-        
-      </DropdownMenu>
-    </>
+          />
+        </TooltipIconButton>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="max-h-[600px] max-w-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+        <DropdownMenuLabel>
+          <TighterText>Custom Quick Actions</TighterText>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {isLoadingQuickActions && !customQuickActions?.length ? (
+          <span className="text-sm text-gray-600 flex items-center justify-start gap-1 p-2">
+            Loading
+            <LoaderCircle className="w-4 h-4 animate-spin" />
+          </span>
+        ) : !customQuickActions?.length ? (
+          <TighterText className="text-sm text-gray-600 p-2">
+            No custom quick actions found.
+          </TighterText>
+        ) : (
+          <div className="max-h-[450px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            {customQuickActions.map((action) => (
+              <DropdownMenuItemWithDelete
+                key={action.id}
+                disabled={props.isTextSelected}
+                onDelete={async () => await handleDelete(action.id)}
+                title={action.title}
+                onClick={async () => await handleQuickActionClick(action.id)}
+                onEdit={() => openEditDialog(action.id)}
+              />
+            ))}
+          </div>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          disabled={props.isTextSelected}
+          onSelect={handleNewActionClick}
+          className="flex items-center justify-start gap-1"
+        >
+          <CirclePlus className="w-4 h-4" />
+          <TighterText className="font-medium">New</TighterText>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+      <NewCustomQuickActionDialog
+        user={user}
+        allQuickActions={customQuickActions || []}
+        isEditing={isEditing}
+        open={dialogOpen}
+        onOpenChange={(c) => {
+          setDialogOpen(c);
+          if (!c) {
+            setIsEditing(false);
+          }
+        }}
+        customQuickAction={
+          isEditing && isEditingId
+            ? customQuickActions?.find((a) => a.id === isEditingId)
+            : undefined
+        }
+        getAndSetCustomQuickActions={getAndSetCustomQuickActions}
+      />
+    </DropdownMenu>
   );
 }
