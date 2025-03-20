@@ -9,15 +9,18 @@ import {
   ArtifactMarkdownV3,
   ArtifactV3,
   CustomQuickAction,
+  Reflections,
 } from "@storia/shared/types";
 import {
   ensureStoreInConfig,
+  formatReflections,
   getModelFromConfig,
 } from "../../utils.js";
 import {
   CUSTOM_QUICK_ACTION_ARTIFACT_CONTENT_PROMPT,
   CUSTOM_QUICK_ACTION_ARTIFACT_PROMPT_PREFIX,
   CUSTOM_QUICK_ACTION_CONVERSATION_CONTEXT,
+  REFLECTIONS_QUICK_ACTION_PROMPT,
 } from "@storia/shared/prompts/quick-actions";
 import {
   OpenCanvasGraphAnnotation,
@@ -56,8 +59,12 @@ export const customAction = async (
   const customActionsNamespace = ["custom_actions", userId];
   const actionsKey = "actions";
 
-  const [customActionsItem] = await Promise.all([
+  const memoryNamespace = ["memories", assistantId];
+  const memoryKey = "reflection";
+
+  const [customActionsItem, memories] = await Promise.all([
     store.get(customActionsNamespace, actionsKey),
+    store.get(memoryNamespace, memoryKey),
   ]);
   if (!customActionsItem?.value) {
     throw new Error("No custom actions found.");
@@ -76,6 +83,14 @@ export const customAction = async (
     : undefined;
 
   let formattedPrompt = `<custom-instructions>\n${customQuickAction.prompt}\n</custom-instructions>`;
+  if (customQuickAction.includeReflections && memories?.value) {
+    const memoriesAsString = formatReflections(memories.value as Reflections);
+    const reflectionsPrompt = REFLECTIONS_QUICK_ACTION_PROMPT.replace(
+      "{reflections}",
+      memoriesAsString
+    );
+    formattedPrompt += `\n\n${reflectionsPrompt}`;
+  }
 
   if (customQuickAction.includePrefix) {
     formattedPrompt = `${CUSTOM_QUICK_ACTION_ARTIFACT_PROMPT_PREFIX}\n\n${formattedPrompt}`;

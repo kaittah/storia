@@ -5,6 +5,7 @@ import { ThreadPrimitive } from "@assistant-ui/react";
 import { Thread as ThreadType } from "@langchain/langgraph-sdk";
 import { ArrowDownIcon, PanelRightOpen, SquarePen } from "lucide-react";
 import { Dispatch, FC, SetStateAction } from "react";
+import { ReflectionsDialog } from "../reflections-dialog/ReflectionsDialog";
 import { useLangSmithLinkToolUI } from "../tool-hooks/LangSmithLinkToolUI";
 import { TooltipIconButton } from "../ui/assistant-ui/tooltip-icon-button";
 import { TighterText } from "../ui/header";
@@ -130,6 +131,7 @@ export const Thread: FC<ThreadProps> = (props: ThreadProps) => {
           </div>
         ) : (
           <div className="flex flex-row gap-2 items-center">
+            <ReflectionsDialog selectedAssistant={selectedAssistant} />
           </div>
         )}
       </div>

@@ -4,6 +4,7 @@ import { customAction } from "./nodes/customAction.js";
 import { generateArtifact } from "./nodes/generate-artifact/index.js";
 import { generateFollowup } from "./nodes/generateFollowup.js";
 import { generatePath } from "./nodes/generate-path/index.js";
+import { reflectNode } from "./nodes/reflect.js";
 import { rewriteArtifact } from "./nodes/rewrite-artifact/index.js";
 import { rewriteArtifactTheme } from "./nodes/rewriteArtifactTheme.js";
 import { updateArtifact } from "./nodes/updateArtifact.js";
@@ -119,6 +120,7 @@ const builder = new StateGraph(OpenCanvasGraphAnnotation)
   .addNode("customAction", customAction)
   .addNode("generateFollowup", generateFollowup)
   .addNode("cleanState", cleanState)
+  .addNode("reflect", reflectNode)
   .addNode("generateTitle", generateTitleNode)
   .addNode("summarizer", summarizer)
   .addNode("webSearch", webSearchGraph)
@@ -146,6 +148,9 @@ const builder = new StateGraph(OpenCanvasGraphAnnotation)
   .addEdge("webSearch", "routePostWebSearch")
   // End edges
   .addEdge("replyToGeneralInput", "cleanState")
+  // Only reflect if an artifact was generated/updated.
+  .addEdge("generateFollowup", "reflect")
+  .addEdge("reflect", "cleanState")
   .addConditionalEdges("cleanState", conditionallyGenerateTitle, [
     END,
     "generateTitle",

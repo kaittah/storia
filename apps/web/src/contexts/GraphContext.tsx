@@ -4,9 +4,7 @@ import {
   isArtifactCodeContent,
   isArtifactMarkdownContent,
   isDeprecatedArtifactType,
-  getArtifactContent,
 } from "@storia/shared/utils/artifacts";
-
 import { reverseCleanContent } from "@/lib/normalize_string";
 import {
   ArtifactType,

@@ -23,6 +23,10 @@ ${DEFAULT_CODE_PROMPT_RULES}
 - Make sure you fulfill ALL aspects of a user's request. For example, if they ask for an output involving an LLM, prefer examples using OpenAI models with LangChain agents.
 </rules-guidelines>
 
+You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
+<reflections>
+{reflections}
+</reflections>
 {disableChainOfThought}`;
 
 export const UPDATE_HIGHLIGHTED_ARTIFACT_PROMPT = `You are an AI assistant, and the user has requested you make an update to a specific part of an artifact you generated in the past.
@@ -46,6 +50,11 @@ Follow these rules and guidelines:
   an incomplete sentence, or an entire paragraph, you should ONLY generate content that is within the highlighted text.
 ${DEFAULT_CODE_PROMPT_RULES}
 </rules-guidelines>
+
+You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
+<reflections>
+{reflections}
+</reflections>
 
 Use the user's recent message below to make the edit.`;
 
@@ -86,6 +95,11 @@ Here is the current content of the artifact:
 {artifactContent}
 </artifact>
 
+You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
+<reflections>
+{reflections}
+</reflections>
+
 Please update the artifact based on the user's request.
 
 Follow these rules and guidelines:
@@ -112,6 +126,11 @@ Here is the current content of the artifact:
 {artifactContent}
 </artifact>
 
+You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
+<reflections>
+{reflections}
+</reflections>
+
 Rules and guidelines:
 <rules-guidelines>
 - ONLY change the language and nothing else.
@@ -127,6 +146,11 @@ Here is the current content of the artifact:
 {artifactContent}
 </artifact>
 
+You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
+<reflections>
+{reflections}
+</reflections>
+
 Rules and guidelines:
 <rules-guidelines>
 - Respond with ONLY the updated artifact, and no additional text before or after.
@@ -140,6 +164,11 @@ Here is the current content of the artifact:
 <artifact>
 {artifactContent}
 </artifact>
+
+You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
+<reflections>
+{reflections}
+</reflections>
 
 Rules and guidelines:
 <rules-guidelines>
@@ -156,6 +185,11 @@ Here is the current content of the artifact:
 {artifactContent}
 </artifact>
 
+You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
+<reflections>
+{reflections}
+</reflections>
+
 Rules and guidelines:
 </rules-guidelines>
 - Respond with ONLY the updated artifact, and no additional text before or after.
@@ -169,6 +203,11 @@ Here is the current content of the artifact:
 <artifact>
 {artifactContent}
 </artifact>
+
+You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
+<reflections>
+{reflections}
+</reflections>
 
 Rules and guidelines:
 </rules-guidelines>
@@ -240,6 +279,11 @@ Here is the artifact you generated:
 <artifact>
 {artifactContent}
 </artifact>
+
+You also have the following reflections on general memories/facts about the user to use when generating your response.
+<reflections>
+{reflections}
+</reflections>
 
 Finally, here is the chat history between you and the user:
 <conversation>

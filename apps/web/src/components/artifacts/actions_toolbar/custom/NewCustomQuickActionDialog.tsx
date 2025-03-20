@@ -75,6 +75,7 @@ export function NewCustomQuickActionDialog(
   const [isSubmitLoading, setIsSubmitLoading] = useState(false);
   const [name, setName] = useState("");
   const [prompt, setPrompt] = useState("");
+  const [includeReflections, setIncludeReflections] = useState(true);
   const [includePrefix, setIncludePrefix] = useState(true);
   const [includeRecentHistory, setIncludeRecentHistory] = useState(true);
   const [showFullPrompt, setShowFullPrompt] = useState(true);
@@ -83,6 +84,7 @@ export function NewCustomQuickActionDialog(
     if (props.customQuickAction) {
       setName(props.customQuickAction.title || "");
       setPrompt(props.customQuickAction.prompt || "");
+      setIncludeReflections(props.customQuickAction.includeReflections ?? true);
       setIncludePrefix(props.customQuickAction.includePrefix ?? true);
       setIncludeRecentHistory(
         props.customQuickAction.includeRecentHistory ?? true
@@ -112,6 +114,7 @@ export function NewCustomQuickActionDialog(
             prompt,
             includePrefix,
             includeRecentHistory,
+            includeReflections,
           },
           props.allQuickActions,
           user.id
@@ -124,6 +127,7 @@ export function NewCustomQuickActionDialog(
             prompt,
             includePrefix,
             includeRecentHistory,
+            includeReflections,
           },
           props.allQuickActions,
           user.id
@@ -152,6 +156,7 @@ export function NewCustomQuickActionDialog(
   const handleClearState = () => {
     setName("");
     setPrompt("");
+    setIncludeReflections(true);
     setIncludePrefix(true);
     setIncludeRecentHistory(true);
     setShowFullPrompt(true);
@@ -254,10 +259,12 @@ export function NewCustomQuickActionDialog(
                       title: name,
                       prompt,
                       includePrefix,
+                      includeReflections,
                       includeRecentHistory,
                     }}
                     setIncludePrefix={setIncludePrefix}
                     setIncludeRecentHistory={setIncludeRecentHistory}
+                    setIncludeReflections={setIncludeReflections}
                   />
                 </div>
               )}
@@ -265,8 +272,48 @@ export function NewCustomQuickActionDialog(
           </div>
 
           <div className="flex items-center space-x-2">
+            <Checkbox
+              disabled={isSubmitLoading}
+              checked={includePrefix}
+              onCheckedChange={(c) => setIncludePrefix(!!c)}
+              id="includeReflections"
+            />
+            <label
+              htmlFor="includeReflections"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              <TighterText>Include prefix in prompt</TighterText>
+            </label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              disabled={isSubmitLoading}
+              checked={includeReflections}
+              onCheckedChange={(c) => setIncludeReflections(!!c)}
+              id="includeReflections"
+            />
+            <label
+              htmlFor="includeReflections"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              <TighterText>Include reflections in prompt</TighterText>
+            </label>
           </div>
 
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              disabled={isSubmitLoading}
+              checked={includeRecentHistory}
+              onCheckedChange={(c) => setIncludeRecentHistory(!!c)}
+              id="includeReflections"
+            />
+            <label
+              htmlFor="includeReflections"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              <TighterText>Include recent history in prompt</TighterText>
+            </label>
+          </div>
           <div className="flex items-center justify-center w-full mt-4 gap-3">
             <Button disabled={isSubmitLoading} className="w-full" type="submit">
               <TighterText>Save</TighterText>
