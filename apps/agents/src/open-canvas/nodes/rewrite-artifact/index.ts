@@ -12,7 +12,6 @@ import {
 } from "./utils.js";
 import {
   createContextDocumentMessages,
-  getFormattedReflections,
   getModelConfig,
   getModelFromConfig,
   isUsingO1MiniModel,
@@ -33,7 +32,6 @@ export const rewriteArtifact = async (
   const smallModelWithConfig = (await getModelFromConfig(config)).withConfig({
     runName: "rewrite_artifact_model_call",
   });
-  const memoriesAsString = await getFormattedReflections(config);
   const { currentArtifactContent, recentHumanMessage } = validateState(state);
 
   const artifactMetaToolCall = await optionallyUpdateArtifactMeta(
@@ -49,7 +47,6 @@ export const rewriteArtifact = async (
 
   const formattedPrompt = buildPrompt({
     artifactContent,
-    memoriesAsString,
     isNewType,
     artifactMetaToolCall,
   });

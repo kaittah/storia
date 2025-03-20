@@ -1,11 +1,8 @@
 import { LangGraphRunnableConfig } from "@langchain/langgraph";
 import { getArtifactContent } from "@storia/shared/utils/artifacts";
-import { Reflections } from "@storia/shared/types";
 import {
   createContextDocumentMessages,
-  ensureStoreInConfig,
   formatArtifactContentWithTemplate,
-  formatReflections,
   getModelFromConfig,
   isUsingO1MiniModel,
 } from "../../utils.js";
@@ -28,31 +25,18 @@ export const replyToGeneralInput = async (
   
 The user has generated artifacts in the past. Use the following artifacts as context when responding to the users question.
 
-You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
-<reflections>
-{reflections}
-</reflections>
-
 {currentArtifactPrompt}`;
 
   const currentArtifactContent = state.artifact
     ? getArtifactContent(state.artifact)
     : undefined;
 
-  const store = ensureStoreInConfig(config);
   const assistantId = config.configurable?.assistant_id;
   if (!assistantId) {
     throw new Error("`assistant_id` not found in configurable");
   }
-  const memoryNamespace = ["memories", assistantId];
-  const memoryKey = "reflection";
-  const memories = await store.get(memoryNamespace, memoryKey);
-  const memoriesAsString = memories?.value
-    ? formatReflections(memories.value as Reflections)
-    : "No reflections found.";
 
   const formattedPrompt = prompt
-    .replace("{reflections}", memoriesAsString)
     .replace(
       "{currentArtifactPrompt}",
       currentArtifactContent

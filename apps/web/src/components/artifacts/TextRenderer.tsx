@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useRef, useState, useCallback } from "react";
 import { ArtifactMarkdownV3 } from "@storia/shared/types";
 import "@blocknote/core/fonts/inter.css";
 import {
@@ -18,9 +18,10 @@ import { Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 import { Textarea } from "../ui/textarea";
 import { cn } from "@/lib/utils";
+import { debounce } from "lodash";
 
 const cleanText = (text: string) => {
-  return text.replaceAll("\\\n", "\n");
+  return text.replace(/\\\n/g, "\n");
 };
 
 function ViewRawText({
@@ -258,7 +259,7 @@ export function TextRendererComponent(props: TextRendererProps) {
         <Textarea
           className="whitespace-pre-wrap font-mono text-sm px-[54px] border-0 shadow-none h-full outline-none ring-0 rounded-none  focus-visible:ring-0 focus-visible:ring-offset-0"
           value={rawMarkdown}
-          onChange={onChangeRawMarkdown}
+          onChange={onChange}
         />
       ) : (
         <>

@@ -2,7 +2,6 @@ import {
   CUSTOM_QUICK_ACTION_ARTIFACT_CONTENT_PROMPT,
   CUSTOM_QUICK_ACTION_ARTIFACT_PROMPT_PREFIX,
   CUSTOM_QUICK_ACTION_CONVERSATION_CONTEXT,
-  REFLECTIONS_QUICK_ACTION_PROMPT,
 } from "@storia/shared/prompts/quick-actions";
 import {
   Tooltip,
@@ -17,7 +16,6 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface FullPromptProps {
   customQuickAction: Omit<CustomQuickAction, "id">;
-  setIncludeReflections: Dispatch<SetStateAction<boolean>>;
   setIncludePrefix: Dispatch<SetStateAction<boolean>>;
   setIncludeRecentHistory: Dispatch<SetStateAction<boolean>>;
 }
@@ -91,9 +89,6 @@ export const FullPrompt = (props: FullPromptProps) => {
   const [highlightPrefix, setHighlightPrefix] = useState(
     props.customQuickAction.includePrefix
   );
-  const [highlightReflections, setHighlightReflections] = useState(
-    props.customQuickAction.includeReflections
-  );
   const [highlightRecentHistory, setHighlightRecentHistory] = useState(
     props.customQuickAction.includeRecentHistory
   );
@@ -101,10 +96,6 @@ export const FullPrompt = (props: FullPromptProps) => {
   useEffect(() => {
     setHighlightPrefix(props.customQuickAction.includePrefix);
   }, [props.customQuickAction.includePrefix]);
-
-  useEffect(() => {
-    setHighlightReflections(props.customQuickAction.includeReflections);
-  }, [props.customQuickAction.includeReflections]);
 
   useEffect(() => {
     setHighlightRecentHistory(props.customQuickAction.includeRecentHistory);
@@ -124,12 +115,6 @@ export const FullPrompt = (props: FullPromptProps) => {
         {props.customQuickAction.prompt}
         <br />
         {`</custom-instructions>`}
-        <HighlightToDeleteText
-          text={`\n\n${REFLECTIONS_QUICK_ACTION_PROMPT}`}
-          onClick={() => props.setIncludeReflections(false)}
-          highlight={highlightReflections}
-          isVisible={props.customQuickAction.includeReflections}
-        />
         <HighlightToDeleteText
           text={`\n\n${CUSTOM_QUICK_ACTION_CONVERSATION_CONTEXT}`}
           onClick={() => props.setIncludeRecentHistory(false)}

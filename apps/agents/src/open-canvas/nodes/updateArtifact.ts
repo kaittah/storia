@@ -6,12 +6,9 @@ import {
 import {
   ArtifactCodeV3,
   ArtifactV3,
-  Reflections,
 } from "@storia/shared/types";
 import {
   createContextDocumentMessages,
-  ensureStoreInConfig,
-  formatReflections,
   getModelConfig,
   getModelFromConfig,
   isUsingO1MiniModel,
@@ -51,18 +48,10 @@ export const updateArtifact = async (
     );
   }
 
-  const store = ensureStoreInConfig(config);
   const assistantId = config.configurable?.assistant_id;
   if (!assistantId) {
     throw new Error("`assistant_id` not found in configurable");
   }
-  const memoryNamespace = ["memories", assistantId];
-  const memoryKey = "reflection";
-  const memories = await store.get(memoryNamespace, memoryKey);
-  const memoriesAsString = memories?.value
-    ? formatReflections(memories.value as Reflections)
-    : "No reflections found.";
-
   const currentArtifactContent = state.artifact
     ? getArtifactContent(state.artifact)
     : undefined;
@@ -105,7 +94,6 @@ export const updateArtifact = async (
   )
     .replace("{beforeHighlight}", beforeHighlight)
     .replace("{afterHighlight}", afterHighlight)
-    .replace("{reflections}", memoriesAsString);
 
   const recentHumanMessage = state._messages.findLast(
     (message) => message.getType() === "human"
