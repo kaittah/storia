@@ -3,38 +3,31 @@
     "author": "Kaitlyn Hennacy",
     "repository": "https://github.com/kaittah/storia",
     "private": true,
-    "workspaces": [
-        "apps/*",
-        "packages/*"
-    ],
+    "workspaces": ["apps/*", "packages/*"],
     "scripts": {
-        "build": "turbo build",
-        "turbo:command": "turbo",
-        "format": "turbo format",
-        "lint": "turbo lint",
-        "lint:fix": "turbo lint:fix"
+      "build": "turbo build",
+      "turbo:command": "turbo",
+      "format": "turbo format",
+      "lint": "turbo lint",
+      "lint:fix": "turbo lint:fix"
     },
     "packageManager": "yarn@1.22.22",
     "devDependencies": {
-        "@eslint/eslintrc": "^3.1.0",
-        "@types/canvas-confetti": "^1.9.0",
-        "@typescript-eslint/eslint-plugin": "^5.59.8",
-        "@typescript-eslint/parser": "^5.59.8",
-        "eslint": "^8.41.0",
-        "eslint-config-prettier": "^8.8.0",
-        "eslint-plugin-import": "^2.27.5",
-        "eslint-plugin-no-instanceof": "^1.0.1",
-        "eslint-plugin-prettier": "^4.2.1",
-        "prettier": "^3.3.3",
-        "tsx": "^4.19.1",
-        "turbo": "latest",
-        "typescript": "^5"
+      "turbo": "latest",
+      "tsx": "^4.19.1",
+      "typescript": "^5",
+      "eslint": "^8.41.0",
+      "@typescript-eslint/eslint-plugin": "^5.59.8",
+      "@eslint/eslintrc": "^3.1.0",
+      "@typescript-eslint/parser": "^5.59.8",
+      "eslint-config-prettier": "^8.8.0",
+      "eslint-plugin-import": "^2.27.5",
+      "eslint-plugin-no-instanceof": "^1.0.1",
+      "eslint-plugin-prettier": "^4.2.1",
+      "prettier": "^3.3.3"
     },
     "resolutions": {
-        "@langchain/core": "^0.3.38"
-    },
-    "dependencies": {
-        "canvas-confetti": "^1.9.3",
-        "googleapis": "^146.0.0"
+      "@langchain/core": "^0.3.38"
     }
-}
+  }
+  

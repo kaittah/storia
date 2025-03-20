@@ -1413,41 +1413,6 @@ export function GraphProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  const handleTextEditUpdate = (newArtifact: ArtifactV3) => {
-    const currentArtifactContent = getArtifactContent(newArtifact);
-    
-    // Ensure we're preserving the edit history for our diff view
-    if (isArtifactMarkdownContent(currentArtifactContent)) {
-      setArtifact((prevArtifact) => {
-        if (!prevArtifact) return newArtifact;
-        
-        // We want to ensure versions are properly incremented
-        const newIndex = prevArtifact.contents.length + 1;
-        
-        // Create a deep copy to avoid reference issues
-        const updatedArtifact = {
-          ...newArtifact,
-          currentIndex: newIndex,
-          contents: [
-            ...prevArtifact.contents,
-            {
-              ...currentArtifactContent,
-              index: newIndex
-            }
-          ]
-        };
-        
-        // Make sure the special flag to indicate this is an edit operation is set
-        // (This isn't actually transmitted to the backend, it's just for UI handling)
-        (updatedArtifact as any).isEditOperation = true;
-        
-        return updatedArtifact;
-      });
-    } else {
-      setArtifact(newArtifact);
-    }
-  };
-
   const contextValue: GraphContentType = {
     graphData: {
       runId,
