@@ -143,7 +143,10 @@ export interface CustomQuickAction {
    * The prompt to use when the quick action is invoked.
    */
   prompt: string;
-
+  /**
+   * Whether or not to include the user's reflections in the prompt.
+   */
+  includeReflections: boolean;
   /**
    * Whether or not to include the default prefix in the prompt.
    */
@@ -152,6 +155,17 @@ export interface CustomQuickAction {
    * Whether or not to include the last 5 (or less) messages in the prompt.
    */
   includeRecentHistory: boolean;
+}
+
+export interface Reflections {
+  /**
+   * Style rules to follow for generating content.
+   */
+  styleRules: string[];
+  /**
+   * Key content to remember about the user when generating content.
+   */
+  content: string[];
 }
 
 export type ContextDocument = {

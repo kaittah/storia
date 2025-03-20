@@ -8,6 +8,7 @@ import {
 import { getArtifactContent } from "@storia/shared/utils/artifacts";
 import { GET_TITLE_TYPE_REWRITE_ARTIFACT } from "../../prompts.js";
 import { OPTIONALLY_UPDATE_ARTIFACT_META_SCHEMA } from "./schemas.js";
+import { getFormattedReflections } from "../../../utils.js";
 import { z } from "zod";
 
 export async function optionallyUpdateArtifactMeta(
@@ -28,6 +29,8 @@ export async function optionallyUpdateArtifactMeta(
     )
     .withConfig({ runName: "optionally_update_artifact_meta" });
 
+  const memoriesAsString = await getFormattedReflections(config);
+
   const currentArtifactContent = state.artifact
     ? getArtifactContent(state.artifact)
     : undefined;
@@ -39,7 +42,7 @@ export async function optionallyUpdateArtifactMeta(
     GET_TITLE_TYPE_REWRITE_ARTIFACT.replace(
       "{artifact}",
       formatArtifactContent(currentArtifactContent, true)
-    );
+    ).replace("{reflections}", memoriesAsString);
 
   const recentHumanMessage = state._messages.findLast(
     (message) => message.getType() === "human"

@@ -1,5 +1,6 @@
 import {
   CustomQuickAction,
+  Reflections,
   ContextDocument,
 } from "@storia/shared/types";
 import { useState } from "react";
@@ -9,12 +10,91 @@ import { CONTEXT_DOCUMENTS_NAMESPACE } from "@storia/shared/constants";
 
 export function useStore() {
   const { toast } = useToast();
+  const [isLoadingReflections, setIsLoadingReflections] = useState(false);
   const [isLoadingQuickActions, setIsLoadingQuickActions] = useState(false);
+  const [reflections, setReflections] = useState<
+    Reflections & { assistantId: string; updatedAt: Date }
+  >();
+
+  const getReflections = async (assistantId: string): Promise<void> => {
+    setIsLoadingReflections(true);
+    const res = await fetch("/api/store/get", {
+      method: "POST",
+      body: JSON.stringify({
+        namespace: ["memories", assistantId],
+        key: "reflection",
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      return;
+    }
+
+    const { item } = await res.json();
+
+    if (!item?.value) {
+      setIsLoadingReflections(false);
+      // No reflections found. Return early.
+      setReflections(undefined);
+      return;
+    }
+
+    let styleRules = item.value.styleRules ?? [];
+    let content = item.value.content ?? [];
+    try {
+      styleRules =
+        typeof styleRules === "string" ? JSON.parse(styleRules) : styleRules;
+      content = typeof content === "string" ? JSON.parse(content) : content;
+    } catch (e) {
+      console.error("Failed to parse reflections", e);
+      styleRules = [];
+      content = [];
+    }
+
+    setReflections({
+      ...item.value,
+      styleRules,
+      content,
+      updatedAt: new Date(item.updatedAt),
+      assistantId,
+    });
+    setIsLoadingReflections(false);
+  };
+
+  const deleteReflections = async (assistantId: string): Promise<boolean> => {
+    const res = await fetch("/api/store/delete", {
+      method: "POST",
+      body: JSON.stringify({
+        namespace: ["memories", assistantId],
+        key: "reflection",
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      return false;
+    }
+
+    const { success } = await res.json();
+    if (success) {
+      setReflections(undefined);
+    } else {
+      toast({
+        title: "Failed to delete reflections",
+        description: "Please try again later.",
+      });
+    }
+    return success;
+  };
 
   const getCustomQuickActions = async (
     userId: string
   ): Promise<CustomQuickAction[] | undefined> => {
-    return undefined;
     setIsLoadingQuickActions(true);
     try {
       const res = await fetch("/api/store/get", {
@@ -209,7 +289,11 @@ export function useStore() {
   };
 
   return {
+    isLoadingReflections,
+    reflections,
     isLoadingQuickActions,
+    deleteReflections,
+    getReflections,
     deleteCustomQuickAction,
     getCustomQuickActions,
     editCustomQuickAction,

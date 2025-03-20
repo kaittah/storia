@@ -1,5 +1,5 @@
-import { Dispatch, SetStateAction, useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { ArtifactV3, ArtifactMarkdownV3 } from "@storia/shared/types";
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
+import { ArtifactMarkdownV3 } from "@storia/shared/types";
 import "@blocknote/core/fonts/inter.css";
 import {
   getDefaultReactSlashMenuItems,
@@ -19,10 +19,9 @@ import { motion } from "framer-motion";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
-import { debounce } from "lodash";
 
 const cleanText = (text: string) => {
-  return text.replace(/\\\n/g, "\n");
+  return text.replaceAll("\\\n", "\n");
 };
 
 /**
@@ -217,9 +216,6 @@ export function TextRendererComponent(props: TextRendererProps) {
   const [originalBlocks, setOriginalBlocks] = useState<string[]>([]);
   const [currentBlocks, setCurrentBlocks] = useState<string[]>([]);
   
-  // Add this at the top with other refs
-  const lastBlockSignatureRef = useRef<string>();
-  
   // Toggle a diff block's expanded state
   const toggleDiffExpand = (blockIndex: number) => {
     setExpandedDiffs(prev => {
@@ -251,60 +247,110 @@ export function TextRendererComponent(props: TextRendererProps) {
 
   // Check for artifact versions and detect edits
   useEffect(() => {
-    const updateContent = async () => {
-      if (!artifact) return;
-      
-      const currentArtifactContent = getArtifactContent(artifact);
-      if (!isArtifactMarkdownContent(currentArtifactContent)) return;
-      
-      const content = cleanText(currentArtifactContent.fullMarkdown);
-      setRawMarkdown(content);
-      
-      try {
-        if (editor) {
-          // Convert markdown to blocks using BlockNote's API
-          const blocks = await editor.tryParseMarkdownToBlocks(content);
-          
-          // Then replace the blocks in the editor
-          if (blocks && blocks.length > 0) {
-            editor.replaceBlocks(editor.document, blocks);
-          }
-        }
-      } catch (error) {
-        console.error("Error updating editor content:", error);
-      }
-      
-      // Check for edits if this is from an edit operation
-      if ((artifact as any).isEditOperation && artifact.contents.length > 1) {
-        const currentContent = currentArtifactContent.fullMarkdown;
-        const previousContent = artifact.contents
-          .filter(c => c.index < artifact.currentIndex)
-          .pop();
-        
-        if (previousContent && isArtifactMarkdownContent(previousContent)) {
-          const originalBlocks = splitIntoBlocks(previousContent.fullMarkdown);
-          const editedBlocks = splitIntoBlocks(currentContent);
-          
-          setOriginalBlocks(originalBlocks);
-          setCurrentBlocks(editedBlocks);
-          
-          const diffs = findDifferentBlocks(originalBlocks, editedBlocks);
-          
-          setEditedBlocks(diffs);
-          setHasEditingOperation(true);
-          
-          // Auto-expand first few diffs
-          const newExpandedDiffs = new Set<number>();
-          Array.from(diffs.keys())
-            .slice(0, 3)
-            .forEach(index => newExpandedDiffs.add(index));
-          setExpandedDiffs(newExpandedDiffs);
-        }
-      }
-    };
+    if (!artifact) return;
     
-    updateContent();
+    const currentArtifactContent = getArtifactContent(artifact);
+    if (!isArtifactMarkdownContent(currentArtifactContent)) return;
+    
+    const content = cleanText(currentArtifactContent.fullMarkdown);
+    setRawMarkdown(content);
+    
+    try {
+      // Use the correct method to update editor content
+      if (editor) {
+        // First convert markdown to blocks
+        const blocks = editor.schema.markdown.parser(content);
+        
+        // Then replace the blocks in the editor
+        if (blocks && blocks.length > 0) {
+          editor.replaceBlocks(editor.topLevelBlocks, blocks);
+        }
+      }
+    } catch (error) {
+      console.error("Error updating editor content:", error);
+    }
+    
+    // Check for edits if this is from an edit operation
+    if ((artifact as any).isEditOperation && artifact.contents.length > 1) {
+      const currentContent = currentArtifactContent.fullMarkdown;
+      const previousContent = artifact.contents
+        .filter(c => c.index < artifact.currentIndex)
+        .pop();
+      
+      if (previousContent && isArtifactMarkdownContent(previousContent)) {
+        const originalBlocks = splitIntoBlocks(previousContent.fullMarkdown);
+        const editedBlocks = splitIntoBlocks(currentContent);
+        
+        setOriginalBlocks(originalBlocks);
+        setCurrentBlocks(editedBlocks);
+        
+        const diffs = findDifferentBlocks(originalBlocks, editedBlocks);
+        
+        setEditedBlocks(diffs);
+        setHasEditingOperation(true);
+        
+        // Auto-expand first few diffs
+        const newExpandedDiffs = new Set<number>();
+        Array.from(diffs.keys())
+          .slice(0, 3)
+          .forEach(index => newExpandedDiffs.add(index));
+        setExpandedDiffs(newExpandedDiffs);
+      }
+    }
   }, [artifact]);
+
+  // For testing purposes - adds a simulated edit
+  const addSimulatedEdit = () => {
+    if (!artifact) return;
+    
+    const currentContent = getArtifactContent(artifact);
+    if (!isArtifactMarkdownContent(currentContent)) return;
+    
+    const content = currentContent.fullMarkdown;
+    const blocks = splitIntoBlocks(content);
+    
+    // Create a copy of the blocks
+    const editedBlocks = [...blocks];
+    
+    // Modify a few blocks for testing
+    if (editedBlocks.length > 0) {
+      editedBlocks[0] = editedBlocks[0] + " [AI improved this paragraph for clarity]";
+    }
+    
+    if (editedBlocks.length > 1) {
+      editedBlocks[1] = "✨ " + editedBlocks[1] + " [Enhanced with additional context]";
+    }
+    
+    if (editedBlocks.length > 2) {
+      editedBlocks[2] = editedBlocks[2].replace(/\./g, '. 🔍 ') + " [Fixed punctuation]";
+    }
+    
+    // Add a new block if there are at least 3 blocks
+    if (editedBlocks.length >= 3) {
+      editedBlocks.splice(3, 0, "**This is a new paragraph added by AI** to provide additional information that might be helpful.");
+    }
+    
+    // Set the original and edited blocks
+    setOriginalBlocks(blocks);
+    setCurrentBlocks(editedBlocks);
+    
+    // Find the differences
+    const diffs = findDifferentBlocks(blocks, editedBlocks);
+    
+    // Update state
+    setEditedBlocks(diffs);
+    setHasEditingOperation(true);
+    
+    // Auto-expand first few diffs
+    const newExpandedDiffs = new Set<number>();
+    Array.from(diffs.keys())
+      .slice(0, 3)
+      .forEach(index => newExpandedDiffs.add(index));
+    setExpandedDiffs(newExpandedDiffs);
+    
+    // Mark the artifact as having an edit operation
+    (artifact as any).isEditOperation = true;
+  };
   
   // Accept a single change
   const acceptChange = (blockIndex: number) => {
@@ -371,10 +417,10 @@ export function TextRendererComponent(props: TextRendererProps) {
     // Create updated blocks with all edits applied
     const newBlocks = [...currentBlocks];
     
-    // Convert Map entries to array before iterating
-    Array.from(editedBlocks.entries()).forEach(([blockIndex, { edited }]) => {
+    // Apply all edits
+    for (const [blockIndex, { edited }] of editedBlocks.entries()) {
       newBlocks[blockIndex] = edited;
-    });
+    }
     
     // Join blocks back together
     const newMarkdown = newBlocks.join('\n\n');
@@ -404,122 +450,56 @@ export function TextRendererComponent(props: TextRendererProps) {
     setHasEditingOperation(false);
   };
 
-  // Fix the onChange handler type
-  const onChange = useCallback(
-    (value: any) => {
-      if (isComposition.current) return;
-      if (!editor) return;
-
-      try {
-        // This returns a Promise<string>, so we need to handle it properly
-        editor.blocksToMarkdownLossy(editor.document).then(markdownString => {
-          setRawMarkdown(markdownString);
-          
-          // Update artifact with proper typing
-          setArtifact((prev: ArtifactV3 | undefined) => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              contents: prev.contents.map((c) => {
-                if (c.index === prev.currentIndex && c.type === "text") {
-                  const updatedContent: ArtifactMarkdownV3 = {
-                    ...c,
-                    type: "text",
-                    fullMarkdown: markdownString,
-                    index: c.index,
-                    title: c.title
-                  };
-                  return updatedContent;
-                }
-                return c;
-              }),
-            } as ArtifactV3;
-          });
-        }).catch(error => {
-          console.error("Error converting blocks to markdown:", error);
-        });
-      } catch (error) {
-        console.error("Error in onChange handler:", error);
-      }
-    },
-    [editor, setArtifact]
-  );
-
-  // Wrap the debounced version separately
-  const debouncedOnChange = useMemo(
-    () => debounce((value: any) => onChange(value), 300),
-    [onChange]
-  );
-
-  // Fix the updateContent function
-  useEffect(() => {
-    const updateContent = async () => {
-      if (!artifact) return;
-      
-      if (prevArtifactRef.current === artifact) {
-        return;
-      }
-      
-      const currentContent = getArtifactContent(artifact);
-      if (!isArtifactMarkdownContent(currentContent)) return;
-      
-      const content = currentContent.fullMarkdown;
-      if (rawMarkdown === content) {
-        return;
-      }
-      
-      if (editor && content) {
-        try {
-          const safeContent = content.length > 100000 
-            ? content.substring(0, 100000) + "... (content truncated for performance)"
-            : content;
-            
-          // Wait for the async operation to complete
-          const blocks = await editor.tryParseMarkdownToBlocks(safeContent);
-          
-          const blockSignature = JSON.stringify(blocks).substring(0, 100);
-          if (lastBlockSignatureRef.current !== blockSignature) {
-            // Wait for the blocks to be replaced
-            await editor.replaceBlocks(editor.document, blocks);
-            lastBlockSignatureRef.current = blockSignature;
-            
-            // Get the current content as a string after the blocks are updated
-            try {
-              const updatedMarkdown = await editor.blocksToMarkdownLossy(editor.document);
-              setRawMarkdown(updatedMarkdown); // Now properly awaiting the Promise
-            } catch (error) {
-              console.error("Error getting markdown from blocks:", error);
+  const onChange = (v: any) => {
+    if (isComposition.current) return;
+    if (!editor) return;
+  
+    try {
+      // Use the correct method to get markdown
+      const markdownString = editor.schema.markdown.serializer(editor.topLevelBlocks);
+      setRawMarkdown(markdownString);
+      setArtifact((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          contents: prev.contents.map((c) => {
+            if (c.index === prev.currentIndex && c.type === "text") {
+              return {
+                ...c,
+                fullMarkdown: markdownString,
+              };
             }
-          }
-        } catch (error) {
-          console.error("Error updating editor content:", error);
-        }
-      }
-      
-      prevArtifactRef.current = artifact;
-    };
-    
-    if (typeof requestIdleCallback !== 'undefined') {
-      requestIdleCallback(() => {
-        updateContent().catch(console.error);
+            return c;
+          }),
+        };
       });
-    } else {
-      setTimeout(() => {
-        updateContent().catch(console.error);
-      }, 0);
+    } catch (error) {
+      console.error("Error in onChange handler:", error);
     }
-  }, [artifact, editor, rawMarkdown]);
+  };
 
-  // 3. Add cleanup functions for any subscriptions
-  useEffect(() => {
-    return () => {
-      // Clean up any event listeners or subscriptions
-      if (editor) {
-        // If there are any editor-specific cleanup methods
-      }
-    };
-  }, [editor]);
-
+  const onChangeRawMarkdown = (
+    e: React.ChangeEvent<HTMLTextAreaElement>
+  ) => {
+    const newRawMarkdown = e.target.value;
+    setRawMarkdown(newRawMarkdown);
+    setArtifact((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        contents: prev.contents.map((c) => {
+          if (c.index === prev.currentIndex) {
+            return {
+              ...c,
+              fullMarkdown: newRawMarkdown,
+            };
+          }
+          return c;
+        }),
+      };
+    });
+  };
+  
   // Render the diff view with the edited blocks
   const renderDiffView = () => {
     if (!showDiffView || editedBlocks.size === 0 || !hasEditingOperation) return null;
@@ -624,13 +604,25 @@ export function TextRendererComponent(props: TextRendererProps) {
         <div className="absolute flex gap-2 top-2 right-4 z-10">
           <CopyText currentArtifactContent={getArtifactContent(artifact)} />
           <ViewRawText isRawView={isRawView} setIsRawView={setIsRawView} />
+          
+          {/* For testing - add a button to simulate edits */}
+          {process.env.NODE_ENV === 'development' && (
+            <Button
+              onClick={addSimulatedEdit}
+              size="sm"
+              variant="outline"
+              className="text-xs"
+            >
+              Simulate Edits
+            </Button>
+          )}
         </div>
       )}
       {isRawView ? (
         <Textarea
           className="whitespace-pre-wrap font-mono text-sm px-[54px] border-0 shadow-none h-full outline-none ring-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0"
           value={rawMarkdown}
-          onChange={debouncedOnChange}
+          onChange={onChangeRawMarkdown}
         />
       ) : (
         <>
@@ -654,16 +646,9 @@ export function TextRendererComponent(props: TextRendererProps) {
               theme="light"
               formattingToolbar={false}
               slashMenu={false}
-              onCompositionStartCapture={(e: React.CompositionEvent) => (isComposition.current = true)}
-              onCompositionEndCapture={(e: React.CompositionEvent) => (isComposition.current = false)}
-              onChange={() => {
-                if (editor) {
-                  // Use the same method as elsewhere in the code
-                  editor.blocksToMarkdownLossy(editor.document)
-                    .then(value => debouncedOnChange(value))
-                    .catch(error => console.error("Error converting blocks to markdown:", error));
-                }
-              }}
+              onCompositionStartCapture={() => (isComposition.current = true)}
+              onCompositionEndCapture={() => (isComposition.current = false)}
+              onChange={onChange}
               editable={
                 !isStreaming || props.isEditing || !manuallyUpdatingArtifact
               }
