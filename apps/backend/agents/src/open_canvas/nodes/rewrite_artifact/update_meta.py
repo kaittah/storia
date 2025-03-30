@@ -6,9 +6,7 @@ from shared.src.types import ArtifactV3
 from agents.src.utils import (
     get_model_from_config,
     is_using_o1_mini_model,
-    format_artifact_content,
-    get_formatted_reflections,
-    
+    format_artifact_content,    
 )
 
 from shared.src.utils.artifacts import get_artifact_content
@@ -24,19 +22,16 @@ async def optionally_update_artifact_meta(
         # Initialize model with tool calling
         model = await get_model_from_config(config, {"is_tool_calling": True})
         model_with_tool = model.bind_tools(
-            [OPTIONALLY_UPDATE_ARTIFACT_META_SCHEMA],
+            [OptionallyUpdateArtifactMetaSchema],
             tool_choice="optionally_update_artifact_meta"
         )
 
-        # Get reflections and format prompt
-        reflections = await get_formatted_reflections(config)
         current_artifact = get_artifact_content(state.artifact) if state.artifact else None
         if not current_artifact:
             return None
 
         prompt = GET_TITLE_TYPE_REWRITE_ARTIFACT.format(
             artifact=format_artifact_content(current_artifact, shorten=True),
-            reflections=reflections
         )
 
         # Find recent human message

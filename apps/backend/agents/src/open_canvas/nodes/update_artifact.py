@@ -3,8 +3,6 @@ from langchain_core.messages import BaseMessage
 from langchain_core.runnables import RunnableConfig
 from agents.src.utils import (
     create_context_document_messages,
-    ensure_store_in_config,
-    format_reflections,
     get_model_config,
     get_model_from_config,
     is_using_o1_mini_model
@@ -47,17 +45,10 @@ async def update_artifact(
         small_model = await get_model_from_config(fallback_config, {"temperature": 0})
 
     # Get reflections from store
-    store = ensure_store_in_config(config)
     assistant_id = config.get("configurable", {}).get("assistant_id")
     if not assistant_id:
         raise ValueError("`assistant_id` not found in configurable")
     
-    memory_namespace = ["memories", assistant_id]
-    memory_key = "reflection"
-    memories = await store.get(memory_namespace, memory_key)
-    memories_str = memories.get("value", None) if memories else None
-    memories_as_string = format_reflections(memories_str) if memories_str else "No reflections found."
-
     # Get current artifact content
     current_artifact_content = None
     if state.get("artifact"):
@@ -90,7 +81,6 @@ async def update_artifact(
         highlighted_text=highlighted_text,
         before_highlight=before_highlight,
         after_highlight=after_highlight,
-        reflections=memories_as_string
     )
 
     # Get recent human message

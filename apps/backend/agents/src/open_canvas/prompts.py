@@ -23,10 +23,7 @@ Follow these rules and guidelines:
 - Make sure you fulfill ALL aspects of a user's request. For example, if they ask for an output involving an LLM, prefer examples using OpenAI models with LangChain agents.
 </rules-guidelines>
 
-You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
-<reflections>
-{{reflections}}
-</reflections>
+
 {{disable_chain_of_thought}}"""
 
 UPDATE_HIGHLIGHTED_ARTIFACT_PROMPT = """You are an AI assistant, and the user has requested you make an update to a specific part of an artifact you generated in the past.
@@ -50,10 +47,7 @@ Follow these rules and guidelines:
 {0}
 </rules-guidelines>
 
-You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
-<reflections>
-{{reflections}}
-</reflections>
+
 
 Use the user's recent message below to make the edit.""".format(DEFAULT_CODE_PROMPT_RULES)
 
@@ -94,10 +88,7 @@ Here is the current content of the artifact:
 {{artifact_content}}
 </artifact>
 
-You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
-<reflections>
-{{reflections}}
-</reflections>
+
 
 Please update the artifact based on the user's request.
 
@@ -123,10 +114,7 @@ Here is the current content of the artifact:
 {{artifact_content}}
 </artifact>
 
-You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
-<reflections>
-{{reflections}}
-</reflections>
+
 
 Rules and guidelines:
 <rules-guidelines>
@@ -143,10 +131,7 @@ Here is the current content of the artifact:
 {{artifact_content}}
 </artifact>
 
-You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
-<reflections>
-{{reflections}}
-</reflections>
+
 
 Rules and guidelines:
 <rules-guidelines>
@@ -162,10 +147,7 @@ Here is the current content of the artifact:
 {{artifact_content}}
 </artifact>
 
-You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
-<reflections>
-{{reflections}}
-</reflections>
+
 
 Rules and guidelines:
 <rules-guidelines>
@@ -182,10 +164,7 @@ Here is the current content of the artifact:
 {{artifact_content}}
 </artifact>
 
-You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
-<reflections>
-{{reflections}}
-</reflections>
+
 
 Rules and guidelines:
 </rules-guidelines>
@@ -201,10 +180,7 @@ Here is the current content of the artifact:
 {{artifact_content}}
 </artifact>
 
-You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
-<reflections>
-{{reflections}}
-</reflections>
+
 
 Rules and guidelines:
 </rules-guidelines>
@@ -277,10 +253,6 @@ Here is the artifact you generated:
 {{artifact_content}}
 </artifact>
 
-You also have the following reflections on general memories/facts about the user to use when generating your response.
-<reflections>
-{{reflections}}
-</reflections>
 
 Finally, here is the chat history between you and the user:
 <conversation>

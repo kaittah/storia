@@ -5,7 +5,6 @@ from agents.src.open_canvas.state import OpenCanvasGraphState
 from shared.src.types import ArtifactV3
 from agents.src.utils import (
     create_context_document_messages,
-    get_formatted_reflections,
     get_model_config,
     get_model_from_config,
     is_using_o1_mini_model,
@@ -36,8 +35,7 @@ async def generate_artifact(
         tool_choice="generate_artifact"
     )
 
-    memories_str = await get_formatted_reflections(config)
-    formatted_prompt = format_new_artifact_prompt(memories_str, model_name)
+    formatted_prompt = format_new_artifact_prompt(model_name)
 
     user_prompt = optionally_get_system_prompt_from_config(config)
     full_prompt = f"{user_prompt}\n{formatted_prompt}" if user_prompt else formatted_prompt

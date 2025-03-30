@@ -6,7 +6,6 @@ from agents.src.open_canvas.state import OpenCanvasGraphState
 from agents.src.utils import (
     get_model_config,
     get_model_from_config,
-    get_formatted_reflections,
     create_context_document_messages,
     is_using_o1_mini_model,
     optionally_get_system_prompt_from_config
@@ -37,7 +36,6 @@ async def rewrite_artifact(
     )
     
     # Get reflections and validate state
-    memories_str = await get_formatted_reflections(config)
     validated = validate_state(state)
     current_artifact = validated.current_artifact_content
     recent_human = validated.recent_human_message
@@ -56,7 +54,6 @@ async def rewrite_artifact(
     # Build prompt
     prompt_args = {
         "artifact_content": artifact_content,
-        "memories_str": memories_str,
         "is_new_type": is_new_type,
         "artifact_meta_tool_call": meta_tool_call
     }

@@ -41,7 +41,6 @@ def build_meta_prompt(tool_call: OptionallyUpdateArtifactMetaSchema) -> str:
 
 class BuildPromptArgs(BaseModel):
     artifact_content: str
-    memories_str: str
     is_new_type: bool
     artifact_meta_tool_call: OptionallyUpdateArtifactMetaSchema
 
@@ -52,7 +51,6 @@ def build_prompt(args: BuildPromptArgs) -> str:
     
     return UPDATE_ENTIRE_ARTIFACT_PROMPT.format(
         artifact_content=args.artifact_content,
-        reflections=args.memories_str,
         update_meta_prompt=meta_prompt
     )
 

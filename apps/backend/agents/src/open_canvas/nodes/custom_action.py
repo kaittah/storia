@@ -8,18 +8,15 @@ from shared.src.types import (
     ArtifactMarkdownV3,
     ArtifactV3,
     CustomQuickAction,
-    Reflections
 )
 from agents.src.utils import (
     ensure_store_in_config,
-    format_reflections,
     get_model_from_config
 )
 from shared.src.prompts.quick_actions import (
     CUSTOM_QUICK_ACTION_ARTIFACT_CONTENT_PROMPT,
     CUSTOM_QUICK_ACTION_ARTIFACT_PROMPT_PREFIX,
     CUSTOM_QUICK_ACTION_CONVERSATION_CONTEXT,
-    REFLECTIONS_QUICK_ACTION_PROMPT
 )
 
 def format_messages(messages: list[BaseMessage]) -> str:
@@ -50,9 +47,8 @@ async def custom_action(
     custom_actions_namespace = ["custom_actions", user_id]
     memory_namespace = ["memories", assistant_id]
     
-    custom_actions_item, memories = await (
-        store.get(custom_actions_namespace, "actions"),
-        store.get(memory_namespace, "reflection")
+    custom_actions_item = await (
+        store.get(custom_actions_namespace, "actions")
     )
 
     if not custom_actions_item or "value" not in custom_actions_item:
@@ -69,10 +65,6 @@ async def custom_action(
 
     # Build formatted prompt
     formatted_prompt = f"<custom-instructions>\n{custom_action.prompt}\n</custom-instructions>"
-    
-    if custom_action.include_reflections and memories and "value" in memories:
-        reflections_str = format_reflections(memories["value"])
-        formatted_prompt += f"\n\n{REFLECTIONS_QUICK_ACTION_PROMPT.format(reflections=reflections_str)}"
     
     if custom_action.include_prefix:
         formatted_prompt = f"{CUSTOM_QUICK_ACTION_ARTIFACT_PROMPT_PREFIX}\n\n{formatted_prompt}"

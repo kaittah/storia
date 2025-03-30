@@ -7,8 +7,6 @@ from shared.src.types import ArtifactV3, ArtifactMarkdownV3
 from agents.src.utils import (
     get_model_config,
     get_model_from_config,
-    format_reflections,
-    ensure_store_in_config
 )
 from agents.src.open_canvas.prompts import (
     CHANGE_ARTIFACT_LANGUAGE_PROMPT,
@@ -25,18 +23,9 @@ async def rewrite_artifact_theme(
     model_config = get_model_config(config)
     small_model = await get_model_from_config(config)
     
-    store = ensure_store_in_config(config)
     assistant_id = config.get("configurable", {}).get("assistant_id")
     if not assistant_id:
         raise ValueError("`assistant_id` not found in configurable")
-    
-    memory_namespace = ["memories", assistant_id]
-    memory_key = "reflection"
-    memories = await store.get(memory_namespace, memory_key)
-    
-    memories_str = format_reflections(
-        memories.get("value") if memories else None
-    ) if memories else "No reflections found."
 
     current_artifact_content = None
     if state.artifact and state.artifact.contents:
@@ -85,8 +74,6 @@ async def rewrite_artifact_theme(
         )
     else:
         raise ValueError("No theme selected")
-
-    formatted_prompt = formatted_prompt.replace("{reflections}", memories_str)
 
     response = await small_model.invoke([{"role": "user", "content": formatted_prompt}])
     

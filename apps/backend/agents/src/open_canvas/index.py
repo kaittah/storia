@@ -15,7 +15,6 @@ from agents.src.open_canvas.nodes.update_artifact import update_artifact
 from agents.src.open_canvas.nodes.update_highlighted_text import update_highlighted_text
 from agents.src.open_canvas.nodes.custom_action import custom_action
 from agents.src.open_canvas.nodes.generate_followup import generate_followup
-from agents.src.open_canvas.nodes.reflect import reflect as reflect_node
 from agents.src.open_canvas.nodes.generate_title import generate_title as generate_title_node
 from agents.src.open_canvas.nodes.summarizer import summarizer
 from agents.src.web_search.index import graph as web_search_graph
@@ -123,7 +122,6 @@ builder = (
     .add_node("customAction", custom_action)
     .add_node("generateFollowup", generate_followup)
     .add_node("cleanState", clean_state)
-    .add_node("reflect", reflect_node)
     .add_node("generateTitle", generate_title_node)
     .add_node("summarizer", summarizer)
     .add_node("webSearch", web_search_graph)
@@ -155,9 +153,6 @@ builder = (
     .add_edge("webSearch", "routePostWebSearch")
     # End edges
     .add_edge("replyToGeneralInput", "cleanState")
-    # Only reflect if an artifact was generated/updated
-    .add_edge("generateFollowup", "reflect")
-    .add_edge("reflect", "cleanState")
     .add_conditional_edges(
         "cleanState",
         conditionally_generate_title,
