@@ -2,30 +2,11 @@ from typing import Dict, Any, List, Optional
 from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 from agents.src.open_canvas.state import OpenCanvasGraphState, OpenCanvasGraphReturnType
-from shared.src.utils.urls import extract_urls
 from agents.src.open_canvas.nodes.generate_path.documents import (
     convert_context_document_to_human_message,
     fix_misformatted_context_doc_message
 )
-from agents.src.utils import get_string_from_content
-from agents.src.open_canvas.nodes.generate_path.include_url_contents import include_url_contents
 from agents.src.open_canvas.nodes.generate_path.dynamic_determine_path import dynamic_determine_path
-
-def extract_urls_from_last_message(messages: List[BaseMessage]) -> List[str]:
-    """Extract URLs from the last message in the list.
-    
-    Args:
-        messages: List of messages
-        
-    Returns:
-        List[str]: List of extracted URLs
-    """
-    if not messages:  # Add check for empty messages list
-        return []
-        
-    recent_message = messages[-1]
-    recent_message_content = get_string_from_content(recent_message.content)
-    return extract_urls(recent_message_content)
 
 async def generate_path(
     state: Dict[str, Any],
@@ -104,11 +85,7 @@ async def generate_path(
             **({"messages": new_messages, "_messages": new_messages} if new_messages else {})
         }
 
-    # Handle URL content inclusion
-    message_urls = extract_urls_from_last_message(_messages)
     updated_message: Optional[HumanMessage] = None
-    if message_urls:
-        updated_message = await include_url_contents(_messages[-1], message_urls)
 
     # Update internal message list
     new_internal_message_list = _messages.copy()
