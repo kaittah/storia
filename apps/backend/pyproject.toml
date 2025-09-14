@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "storia-backend"
+version = "0.1.0"
+description = "Storia backend"
+authors = ["Kaitlyn Hennacy <kaitlynhennacy@gmail.com>"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "3.12.9"
+fastapi = "*"
+uvicorn = "*"
+langchain = "*"
+langchain-openai = "*"
+langchain-anthropic = "*"
+langchain-core = "*"
+langchain-community = "*"
+langchain-google-genai = "*"
+langgraph = "*"
+supabase = "*"
+tavily-python = "*"
+pydantic = "*"
+python-dotenv = "*"
+pendulum = "*"
+websockets = "*"
+
+[tool.poetry.group.dev.dependencies]
+langgraph-cli = { version = "*", extras = ["inmem"] }
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
